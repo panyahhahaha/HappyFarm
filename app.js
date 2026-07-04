@@ -140,6 +140,9 @@ const els = {
   owlSuccessMsg: document.getElementById('owl-success-msg'),
   owlSuccessReward: document.getElementById('owl-success-reward'),
   owlSuccessContinueBtn: document.getElementById('owl-success-continue-btn'),
+  imageLightbox: document.getElementById('image-lightbox'),
+  lightboxImg: document.getElementById('lightbox-img'),
+  lightboxCaption: document.getElementById('lightbox-caption'),
   
   btnSuccessSpeak: document.getElementById('btn-success-speak'),
   successExplanationText: document.getElementById('success-explanation-text'),
@@ -667,6 +670,25 @@ function setupEventListeners() {
   els.btnOwlStartTest.addEventListener('click', startPostTest);
   els.btnTabStudent.addEventListener('click', () => switchClassroomTab('student'));
   els.btnTabParent.addEventListener('click', () => switchClassroomTab('parent'));
+
+  // Chalkboard Visual Fullscreen Zoom (Lightbox) for all classroom/quiz visuals
+  ['owl-lesson-visual', 'owl-test-visual', 'question-visual'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', (e) => {
+        if (e.target.tagName === 'IMG') {
+          AudioEngine.playSFX('click');
+          els.lightboxImg.src = e.target.src;
+          els.lightboxCaption.textContent = e.target.alt || "รายละเอียดรูปภาพ";
+          els.imageLightbox.style.display = 'flex';
+        }
+      });
+    }
+  });
+  els.imageLightbox.addEventListener('click', () => {
+    AudioEngine.playSFX('click');
+    els.imageLightbox.style.display = 'none';
+  });
 
   // Audio Speech Narration Action Listeners
   els.btnSuccessSpeak.addEventListener('click', () => {
