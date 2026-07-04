@@ -269,7 +269,9 @@ function getNewUserState(username, pin) {
       questionsSolvedToday: 0,
       challengeDayProgress: 0,
       answeredCorrectlyIds: [],
-      monthlyCompleted: false
+      monthlyCompleted: false,
+      streakShields: 0,
+      weaknesses: {}
     }
   };
 }
@@ -807,6 +809,7 @@ function renderFarmerProfile() {
 // General Renderers
 function renderAll() {
   if (!state) return;
+  checkDailyStreakReset();
   renderStats();
   renderPlots();
   renderInventory();
@@ -1041,6 +1044,40 @@ function renderMarket() {
     proposeMarriage();
   });
   els.marketItemsGrid.appendChild(ringCard);
+
+  // Streak Freeze Item
+  const freezeCard = document.createElement('div');
+  freezeCard.className = 'market-card';
+  const shieldsCount = state.quizHistory.streakShields || 0;
+  freezeCard.innerHTML = `
+    <span class="market-badge" style="background:#0288d1; color:white;">Study Protection</span>
+    <div class="market-item-icon">🛡️</div>
+    <div class="market-item-name">Streak Freeze (โล่แช่แข็ง)</div>
+    <div class="market-item-desc">
+      ช่วยป้องกันไม่ให้สถิติวันสะสมการเรียนย้อนกลับเป็น 0 หากคุณข้ามวันทำโจทย์ (มีติดตัวไว้ปลอดภัยกว่า!)
+      <br><strong style="color:var(--text-dark);">Active Shields: ${shieldsCount}</strong>
+    </div>
+    <div class="market-item-price">🪙 150</div>
+    <button class="market-buy-btn" id="market-buy-freeze-btn">Buy Streak Freeze</button>
+  `;
+  const buyFreezeBtn = freezeCard.querySelector('#market-buy-freeze-btn');
+  if (state.coins < 150) buyFreezeBtn.disabled = true;
+  buyFreezeBtn.addEventListener('click', () => {
+    if (state.coins >= 150) {
+      state.coins -= 150;
+      if (!state.quizHistory.streakShields) state.quizHistory.streakShields = 0;
+      state.quizHistory.streakShields++;
+      usersDB[currentUser] = state;
+      saveUsersDB();
+      renderAll();
+      AudioEngine.playSFX('correct');
+      alert(`🛡️ ซื้อ Streak Freeze สำเร็จ! คุณมีตัวช่วยป้องกันการข้ามวันสะสมคงเหลือ ${state.quizHistory.streakShields} อัน`);
+    } else {
+      AudioEngine.playSFX('incorrect');
+      alert("เหรียญทองไม่เพียงพอ! (ต้องใช้ 150 เหรียญ)");
+    }
+  });
+  els.marketItemsGrid.appendChild(freezeCard);
 }
 
 // Unlock plots
@@ -1511,6 +1548,10 @@ function loadSessionQuestion(idx) {
       }
       state.quizHistory.questionsSolvedToday++;
       
+      if (!state.quizHistory.weaknesses) state.quizHistory.weaknesses = {};
+      const typeKey = q.type || 'unknown';
+      state.quizHistory.weaknesses[typeKey] = (state.quizHistory.weaknesses[typeKey] || 0) + 1;
+      
       usersDB[currentUser] = state;
       saveUsersDB();
       renderAll();
@@ -1546,22 +1587,27 @@ function finishSession() {
   let message = "";
   
   if (state.quizHistory.questionsSolvedToday >= 30) {
-    if (state.quizHistory.lastQuizDate !== todayStr) {
+    const lastIncDate = state.quizHistory.lastIncrementDate || "";
+    if (lastIncDate !== todayStr) {
+      state.quizHistory.lastIncrementDate = todayStr;
       state.quizHistory.lastQuizDate = todayStr;
       state.quizHistory.challengeDayProgress++;
       
-      if (state.quizHistory.challengeDayProgress >= 30 && !state.quizHistory.monthlyCompleted) {
-        state.quizHistory.monthlyCompleted = true;
-        state.coins += 500;
-        state.xp += 500;
-        if (!state.badges.includes('monthly_mastermind')) {
-          state.badges.push('monthly_mastermind');
-        }
-        message = "\n\n🎉 ยินดีด้วยอย่างยิ่ง! คุณผ่านความท้าทายเรียนรู้วันละ 30 ข้อครบ 1 เดือน (30 วัน) แล้ว! ได้รับเหรียญโบนัส +500 Coins และ +500 XP พร้อมตราเกียรติยศสูงสุด 'Monthly Mastermind 🌟🏆'!";
+      // Milestone Day 10
+      if (state.quizHistory.challengeDayProgress === 10 && !state.badges.includes('study_day_10')) {
+        state.badges.push('study_day_10');
+        state.coins += 100;
+        state.xp += 100;
+        message += "\n\n🎉 ยินดีด้วย! คุณสะสมวันเรียนครบ 10 วัน ปลดล็อคตราเกียรติยศ 'Study Scholar 📜' และรับโบนัส 100 เหรียญทอง!";
       }
-    } else {
-      // Just record challenge day if day limit solved is reached today
-      state.quizHistory.challengeDayProgress++;
+      // Milestone Day 20
+      if (state.quizHistory.challengeDayProgress === 20 && !state.badges.includes('study_day_20')) {
+        state.badges.push('study_day_20');
+        state.coins += 200;
+        state.xp += 200;
+        message += "\n\n🎉 ยินดีด้วย! คุณสะสมวันเรียนครบ 20 วัน ปลดล็อคตราเกียรติยศ 'Expert Explorer 🔍' และรับโบนัส 200 เหรียญทอง!";
+      }
+      // Milestone Day 30
       if (state.quizHistory.challengeDayProgress >= 30 && !state.quizHistory.monthlyCompleted) {
         state.quizHistory.monthlyCompleted = true;
         state.coins += 500;
@@ -1569,7 +1615,7 @@ function finishSession() {
         if (!state.badges.includes('monthly_mastermind')) {
           state.badges.push('monthly_mastermind');
         }
-        message = "\n\n🎉 ยินดีด้วยอย่างยิ่ง! คุณผ่านความท้าทายเรียนรู้วันละ 30 ข้อครบ 1 เดือน (30 วัน) แล้ว! ได้รับเหรียญโบนัส +500 Coins และ +500 XP พร้อมตราเกียรติยศสูงสุด 'Monthly Mastermind 🌟🏆'!";
+        message += "\n\n🎉 ยินดีด้วยอย่างยิ่ง! คุณผ่านความท้าทายเรียนรู้วันละ 30 ข้อครบ 1 เดือน (30 วัน) แล้ว! ได้รับเหรียญโบนัส +500 Coins และ +500 XP พร้อมตราเกียรติยศสูงสุด 'Monthly Mastermind 🌟🏆'!";
       }
     }
   }
@@ -1659,6 +1705,7 @@ function updateStudyWidget() {
   const todayProgressEl = document.getElementById('study-today-progress');
   const progressBarEl = document.getElementById('study-day-progress-bar');
   const statusBadgeEl = document.getElementById('study-status-badge');
+  const weaknessListEl = document.getElementById('study-weakness-list');
   
   const todayStr = new Date().toISOString().split('T')[0];
   const solvedToday = state.quizHistory.questionsSolvedToday || 0;
@@ -1688,6 +1735,112 @@ function updateStudyWidget() {
   if (progressBarEl) {
     const dayPct = (completedDays / 30) * 100;
     progressBarEl.style.width = `${dayPct}%`;
+  }
+
+  // Populate Weakness List (Parent Dashboard Report Card)
+  if (weaknessListEl) {
+    if (state.quizHistory.weaknesses && Object.keys(state.quizHistory.weaknesses).length > 0) {
+      const sorted = Object.entries(state.quizHistory.weaknesses)
+        .filter(([_, count]) => count > 0)
+        .sort((a, b) => b[1] - a[1]);
+      
+      if (sorted.length > 0) {
+        const typeNames = {
+          count: 'การนับจำนวนสิ่งของ 🔢',
+          shape: 'รูปทรงเรขาคณิต 🔴🟦',
+          comparison: 'เปรียบเทียบขนาด (เล็ก-ใหญ่) 🐘🐭',
+          matching: 'จับคู่ความสัมพันธ์ของสิ่งของ 🐰🥕',
+          addition: 'การบวกเลข ➕',
+          subtraction: 'การลบเลข ➖',
+          multiplication: 'การคูณเลข ✖️',
+          division: 'การหารเลข ➗',
+          decimals: 'เรื่องทศนิยม 0.5',
+          volume: 'การหาปริมาตรลูกบาศก์ 📦',
+          equation: 'โจทย์แก้สมการตัวแปร x',
+          gcd: 'หา ห.ร.ม. (หารร่วมมาก)',
+          lcm: 'หา ค.ร.น. (คูณร่วมน้อย)',
+          spelling: 'การสะกดคำศัพท์ภาษาอังกฤษ 🔤',
+          grammar: 'ไวยากรณ์สรรพนาม (He/She/It)',
+          conjunction: 'คำเชื่อมประโยค (so/but/because)',
+          grammar_passive: 'ไวยากรณ์ประโยคถูกกระทำ (Passive Voice)',
+          idiom: 'สำนวนภาษาอังกฤษ (Idioms)'
+        };
+        
+        let html = '<span style="color:#d84315; font-weight:bold;">⚠️ จุดที่ควรฝึกฝนเพิ่มเติม:</span><ul style="margin: 4px 0 0 16px; padding: 0;">';
+        sorted.slice(0, 3).forEach(([type, count]) => {
+          const name = typeNames[type] || type;
+          html += `<li>${name} (ตอบผิด ${count} ครั้ง)</li>`;
+        });
+        html += '</ul><span style="font-size:0.75rem; color:#795548; display:block; margin-top:4px;">* แนะนำให้คุณแม่/คุณครูชวนน้องทบทวนบทเรียนเรื่องนี้ร่วมกันนะครับ 🦉</span>';
+        weaknessListEl.innerHTML = html;
+      } else {
+        weaknessListEl.innerHTML = 'ยังไม่มีประวัติการทำผิดพลาด คุณครูยังไม่พบจุดอ่อนของเด็กๆ ครับ! ยอดเยี่ยมมาก 🎉';
+      }
+    } else {
+      weaknessListEl.innerHTML = 'ยังไม่มีประวัติการทำผิดพลาด คุณครูยังไม่พบจุดอ่อนของเด็กๆ ครับ! ยอดเยี่ยมมาก 🎉';
+    }
+  }
+}
+
+function checkDailyStreakReset() {
+  if (!state || !state.quizHistory) return;
+  const todayStr = new Date().toISOString().split('T')[0];
+  
+  // Set initial lastQuizDate if empty so we start tracking
+  if (!state.quizHistory.lastQuizDate) {
+    state.quizHistory.lastQuizDate = todayStr;
+    usersDB[currentUser] = state;
+    saveUsersDB();
+    return;
+  }
+  
+  if (state.quizHistory.lastQuizDate !== todayStr) {
+    // Day changed! Check if they failed to finish yesterday's 30 questions
+    if (state.quizHistory.questionsSolvedToday < 30) {
+      if (state.quizHistory.streakShields > 0) {
+        state.quizHistory.streakShields--;
+        alert(`🛡️ คุณทำแบบฝึกหัดไม่ครบ 30 ข้อในวันก่อน แต่สถิติสะสมของคุณได้รับการปกป้องด้วย Streak Freeze! (หักโล่ 1 อัน คงเหลือ ${state.quizHistory.streakShields} อัน)`);
+      } else {
+        state.quizHistory.challengeDayProgress = 0;
+        alert("😢 คุณไม่ได้ทำแบบฝึกหัดต่อเนื่องครบ 30 ข้อในวันก่อน ทำให้วันสะสมย้อนกลับไปเริ่มที่วันที่ 0 ใหม่ครับ มารักษาความต่อเนื่องใหม่นะ! 🦉");
+      }
+    } else {
+      // Check for skipped days (not logging in at all)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const lastDateParts = state.quizHistory.lastQuizDate.split('-');
+      if (lastDateParts.length === 3) {
+        const lastDate = new Date(parseInt(lastDateParts[0]), parseInt(lastDateParts[1]) - 1, parseInt(lastDateParts[2]));
+        lastDate.setHours(0, 0, 0, 0);
+        
+        const timeDiff = today.getTime() - lastDate.getTime();
+        const diffDays = Math.floor(timeDiff / (1000 * 3600 * 24));
+        
+        if (diffDays > 1) {
+          let shieldsNeeded = diffDays - 1;
+          let shieldsUsed = 0;
+          while (state.quizHistory.streakShields > 0 && shieldsNeeded > shieldsUsed) {
+            state.quizHistory.streakShields--;
+            shieldsUsed++;
+          }
+          
+          if (shieldsUsed >= shieldsNeeded) {
+            alert(`🛡️ สถิติการสะสมได้รับการปกป้องโดย Streak Freeze! (หักโล่ ${shieldsUsed} อัน เพื่อชดเชยวันที่ขาดหายไป คงเหลือโล่ ${state.quizHistory.streakShields} อัน)`);
+          } else {
+            state.quizHistory.challengeDayProgress = 0;
+            alert("😢 คุณข้ามวันฝึกหัดไป ทำให้วันสะสมย้อนกลับไปเริ่มที่วันที่ 0 ใหม่ครับ มารักษาความต่อเนื่องใหม่นะ! 🦉");
+          }
+        }
+      }
+    }
+    
+    // Reset daily solved count for the new day
+    state.quizHistory.questionsSolvedToday = 0;
+    state.quizHistory.lastQuizDate = todayStr;
+    usersDB[currentUser] = state;
+    saveUsersDB();
+    updateStudyWidget();
   }
 }
 
@@ -1757,9 +1910,28 @@ function renderBadges() {
     els.profileBadgesGrid.appendChild(badgeEl);
   });
 
-  if (lessons.length === 0) {
+  if (lessons.length === 0 && (!state.badges || state.badges.length === 0)) {
     els.profileBadgesGrid.innerHTML = '<div style="font-size:0.8rem; color:#999;">No badges in this level.</div>';
   }
+
+  // Custom study progression badges
+  const studyBadges = [
+    { id: 'study_day_10', name: 'Study Scholar', emoji: '📜', desc: 'Complete Day 10 of the Study Challenge' },
+    { id: 'study_day_20', name: 'Expert Explorer', emoji: '🔍', desc: 'Complete Day 20 of the Study Challenge' },
+    { id: 'monthly_mastermind', name: 'Monthly Mastermind', emoji: '🏆', desc: 'Complete Day 30 of the Study Challenge' }
+  ];
+
+  studyBadges.forEach(cb => {
+    const isUnlocked = state.badges && state.badges.includes(cb.id);
+    const badgeEl = document.createElement('div');
+    badgeEl.className = `badge-card ${isUnlocked ? 'unlocked' : ''}`;
+    badgeEl.innerHTML = `
+      <span class="badge-emoji">${isUnlocked ? cb.emoji : '🔒'}</span>
+      <div class="badge-name-lbl">${isUnlocked ? cb.name.split(' ')[0] : 'Locked'}</div>
+    `;
+    badgeEl.title = isUnlocked ? `Unlocked: ${cb.name} - ${cb.desc}` : `Locked: ${cb.desc}`;
+    els.profileBadgesGrid.appendChild(badgeEl);
+  });
 }
 
 // Owl Lesson Slide Flow Controllers
