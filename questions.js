@@ -4,29 +4,29 @@
 window.questionsData = {
   "level-kg": {
     name: "Kindergarten (อนุบาล / อ.1 - อ.3)",
-    math: [
-      { id: "kg_m1", type: "count", question: "How many butterflies? (มีผีเสื้อทั้งหมดกี่ตัว?)", visual: "🦋🦋🦋", options: ["2", "3", "4"], answer: "3", explanation: "นับทีละตัวไปด้วยกันนะครับ: 🦋(หนึ่ง) ➔ 🦋(สอง) ➔ 🦋(สาม) รวมมีผีเสื้อ 3 ตัวครับ!" },
-      { id: "kg_m2", type: "count", question: "How many apples? (มีแอปเปิ้ลกี่ผล?)", visual: "🍎🍎🍎🍎🍎", options: ["4", "5", "6"], answer: "5", explanation: "ใช้นิ้วนับทีละผล: 🍎(หนึ่ง) ➔ 🍎(สอง) ➔ 🍎(สาม) ➔ 🍎(สี่) ➔ 🍎(ห้า) รวมมีแอปเปิ้ล 5 ผลครับ!" },
-      { id: "kg_m3", type: "shape", question: "Which shape is a circle? (รูปทรงใดคือวงกลม?)", visual: "🟡", options: ["Circle (วงกลม)", "Square (สี่เหลี่ยม)", "Triangle (สามเหลี่ยม)"], answer: "Circle (วงกลม)", explanation: "วงกลม (Circle) มีลักษณะโค้งมนกลมเกลี้ยง ไม่มีเหลี่ยมไม่มีมุม เหมือนรูป 🟡 ครับ!" },
-      { id: "kg_m4", type: "shape", question: "Which shape is a triangle? (รูปทรงใดคือสามเหลี่ยม?)", visual: "🔺", options: ["Circle (วงกลม)", "Square (สี่เหลี่ยม)", "Triangle (สามเหลี่ยม)"], answer: "Triangle (สามเหลี่ยม)", explanation: "สามเหลี่ยม (Triangle) มี 3 มุมและมี 3 ด้านแหลมๆ ชี้ขึ้นด้านบน เหมือนรูป 🔺 ครับ!" },
-      { id: "kg_m5", type: "shape", question: "Which shape is a square? (รูปทรงใดคือสี่เหลี่ยม?)", visual: "🟦", options: ["Circle (วงกลม)", "Square (สี่เหลี่ยม)", "Triangle (สามเหลี่ยม)"], answer: "Square (สี่เหลี่ยม)", explanation: "สี่เหลี่ยม (Square) มี 4 มุมและมี 4 ด้านเท่ากัน เหมือนรูปกล่อง 🟦 ครับ!" },
-      { id: "kg_m6", type: "comparison", question: "Which fruit is BIG? (ผลไม้ใดมีขนาดใหญ่?)", visual: "🍉 vs 🍓", options: ["Watermelon (แตงโม)", "Strawberry (สตรอว์เบอร์รี่)"], answer: "Watermelon (แตงโม)", explanation: "แตงโม 🍉 ผลใหญ่มาก (BIG) ส่วนสตรอว์เบอร์รี่ 🍓 มีขนาดเล็กจิ๋ว (Small) ครับ!" },
-      { id: "kg_m7", type: "comparison", question: "Which animal is TALL? (สัตว์ตัวใดมีความสูง?)", visual: "🦒 vs 🐱", options: ["Giraffe (ยีราฟ)", "Cat (แมว)"], answer: "Giraffe (ยีราฟ)", explanation: "ยีราฟ 🦒 คอยาวสูงชะลูดขึ้นฟ้า (TALL) ส่วนแมว 🐱 ตัวเตี้ยอยู่ใกล้พื้นดินครับ!" },
-      { id: "kg_m8", type: "count", question: "How many carrots? (มีแครอทกี่หัว?)", visual: "🥕🥕", options: ["1", "2", "3"], answer: "2", explanation: "นับทีละหัวในแปลง: 🥕(หนึ่ง) ➔ 🥕(สอง) รวมมีแครอท 2 หัวครับ!" },
-      { id: "kg_m9", type: "count", question: "How many ducks? (มีเป็ดกี่ตัว?)", visual: "🦆🦆🦆🦆", options: ["3", "4", "5"], answer: "4", explanation: "นับเป็ด in บ่อน้ำ: 🦆(หนึ่ง) ➔ 🦆(สอง) ➔ 🦆(สาม) ➔ 🦆(สี่) รวมมีเป็ด 4 ตัวครับ!" },
-      { id: "kg_m10", type: "comparison", question: "Which string is LONG? (เชือกเส้นใดมีความยาว?)", visual: "      vs   ", options: ["Long (ยาว)", "Short (สั้น)"], answer: "Long (ยาว)", explanation: "เชือกที่มีหลายลูปมีความยาว (LONG) ส่วนเชือกสั้นมีขนาดย่อลงมาครับ!" }
+        math: [
+      { id: "kg_m1", type: "count", question: "Count the butterflies: (นับจำนวนผีเสื้อแสนสวย)", visual: "<span style='font-size:3.5rem;'>🦋🦋🦋</span>", options: ["2", "3", "4"], answer: "3", explanation: "นับทีละตัวไปด้วยกันนะครับ: 🦋(หนึ่ง) ➔ 🦋(สอง) ➔ 🦋(สาม) รวมมีผีเสื้อ 3 ตัวครับ!" },
+      { id: "kg_m2", type: "count", question: "Count the apples: (นับจำนวนแอปเปิ้ลสีแดง)", visual: "<span style='font-size:3.5rem;'>🍎🍎🍎🍎🍎</span>", options: ["4", "5", "6"], answer: "5", explanation: "ใช้นิ้วนับทีละผล: 🍎(หนึ่ง) ➔ 🍎(สอง) ➔ 🍎(สาม) ➔ 🍎(สี่) ➔ 🍎(ห้า) รวมมีแอปเปิ้ล 5 ผลครับ!" },
+      { id: "kg_m3", type: "shape", question: "Which shape is a circle? (รูปทรงใดคือวงกลม?)", visual: "<span style='font-size:3.5rem;'>🟡</span>", options: ["🟡 Circle (วงกลม)", "🟦 Square (สี่เหลี่ยม)", "🔺 Triangle (สามเหลี่ยม)"], answer: "🟡 Circle (วงกลม)", explanation: "วงกลม (Circle) มีลักษณะโค้งมนกลมเกลี้ยง ไม่มีเหลี่ยมไม่มีมุม เหมือนรูป 🟡 ครับ!" },
+      { id: "kg_m4", type: "shape", question: "Which shape is a triangle? (รูปทรงใดคือสามเหลี่ยม?)", visual: "<span style='font-size:3.5rem;'>🔺</span>", options: ["🟡 Circle (วงกลม)", "🟦 Square (สี่เหลี่ยม)", "🔺 Triangle (สามเหลี่ยม)"], answer: "🔺 Triangle (สามเหลี่ยม)", explanation: "สามเหลี่ยม (Triangle) มี 3 มุมและมี 3 ด้านแหลมๆ ชี้ขึ้นด้านบน เหมือนรูป 🔺 ครับ!" },
+      { id: "kg_m5", type: "shape", question: "Which shape is a square? (รูปทรงใดคือสี่เหลี่ยม?)", visual: "<span style='font-size:3.5rem;'>🟦</span>", options: ["🟡 Circle (วงกลม)", "🟦 Square (สี่เหลี่ยม)", "🔺 Triangle (สามเหลี่ยม)"], answer: "🟦 Square (สี่เหลี่ยม)", explanation: "สี่เหลี่ยม (Square) มี 4 มุมและมี 4 ด้านเท่ากัน เหมือนรูปกล่อง 🟦 ครับ!" },
+      { id: "kg_m6", type: "comparison", question: "Which one is BIG? (สิ่งใดมีขนาดใหญ่?)", visual: "<span style='font-size:3.5rem;'>🍉 vs 🍓</span>", options: ["🍉 แตงโมผลใหญ่", "🍓 สตรอว์เบอร์รี่ผลเล็ก"], answer: "🍉 แตงโมผลใหญ่", explanation: "แตงโม 🍉 ผลใหญ่มาก (BIG) ส่วนสตรอว์เบอร์รี่ 🍓 มีขนาดเล็กจิ๋ว (Small) ครับ!" },
+      { id: "kg_m7", type: "comparison", question: "Match: What does the bunny eat? (กระต่ายน้อยกินอะไร?)", visual: "<span style='font-size:3.5rem;'>🐰 ➔ ❓</span>", options: ["🥕 Carrot (แครอท)", "🥩 Meat (เนื้อสัตว์)", "🌾 Grass (ต้นข้าว)"], answer: "🥕 Carrot (แครอท)", explanation: "กระต่ายน้อย 🐰 ชื่นชอบการกินแครอท 🥕 สีส้มแสนอร่อยและมีประโยชน์ครับ!" },
+      { id: "kg_m8", type: "count", question: "Count the carrots: (มีแครอทกี่หัว?)", visual: "<span style='font-size:3.5rem;'>🥕🥕</span>", options: ["1", "2", "3"], answer: "2", explanation: "นับทีละหัวในแปลง: 🥕(หนึ่ง) ➔ 🥕(สอง) รวมมีแครอท 2 หัวครับ!" },
+      { id: "kg_m9", type: "count", question: "Count the ducks: (มีเป็ดกี่ตัว?)", visual: "<span style='font-size:3.5rem;'>🦆🦆🦆🦆</span>", options: ["3", "4", "5"], answer: "4", explanation: "นับเป็ดในบ่อน้ำทีละตัว: 🦆(หนึ่ง) ➔ 🦆(สอง) ➔ 🦆(สาม) ➔ 🦆(สี่) รวมมีเป็ด 4 ตัวครับ!" },
+      { id: "kg_m10", type: "comparison", question: "Match the number 4 with the correct group: (จับคู่เลข 4 กับสิ่งของ)", visual: "<span style='font-size:3.5rem;'>4️⃣ ➔ ❓</span>", options: ["🥕🥕🥕 (3)", "🥕🥕🥕🥕 (4)", "🥕🥕 (2)"], answer: "🥕🥕🥕🥕 (4)", explanation: "เลข 4 คู่กับกลุ่มที่มีแครอท 4 หัว (🥕🥕🥕) พอดีครับ!" }
     ],
     english: [
-      { id: "kg_e1", type: "alphabet", question: "Which letter is CAPITAL letter A? (อักษรพิมพ์ใหญ่ A)", visual: "a vs A", options: ["a", "A", "B"], answer: "A", explanation: "อักษรตัวพิมพ์ใหญ่ของ a คือ A ตัวใหญ่ที่มียอดแหลมเหมือนหลังคาบ้านครับ!" },
-      { id: "kg_e2", type: "alphabet", question: "Which letter is lowercase b? (อักษรพิมพ์เล็ก b)", visual: "B vs b", options: ["b", "d", "p"], answer: "b", explanation: "ตัวพิมพ์เล็กคือ b สังเกตมีเส้นตรงชี้ขึ้นบนและมีพุงป่องไปทางขวา (b) ครับ!" },
-      { id: "kg_e3", type: "phonics", question: "What sound does the letter 'A' make? (ตัวอักษร A ออกเสียงอะไร?)", visual: "Letter A", options: ["แอะ (ae)", "เบอะ (be)", "เคอะ (ke)"], answer: "แอะ (ae)", explanation: "ในระบบโฟนิกส์ ตัวอักษร A ออกเสียงว่า 'แอะ' (ae) เช่น A-A-Apple (แอะ-แอะ-แอปเปิ้ล) ครับ!" },
-      { id: "kg_e4", type: "phonics", question: "What sound does the letter 'B' make? (ตัวอักษร B ออกเสียงอะไร?)", visual: "Letter B", options: ["แอะ (ae)", "เบอะ (be)", "เดอะ (de)"], answer: "เบอะ (be)", explanation: "ในระบบโฟนิกส์ ตัวอักษร B ออกเสียงว่า 'เบอะ' (be) เช่น B-B-Boy (เบอะ-เบอะ-บอย) ครับ!" },
-      { id: "kg_e5", type: "color", question: "What color is this apple? (แอปเปิ้ลสีนี้คือสีอะไร?)", visual: "🍎", options: ["Red (สีแดง)", "Blue (สีน้ำเงิน)", "Yellow (สีเหลือง)"], answer: "Red (สีแดง)", explanation: "แอปเปิ้ลผลนี้มีสีแดง ภาษาอังกฤษคือคำว่า Red (เรด) สะกดด้วย R-E-D ครับ!" },
-      { id: "kg_e6", type: "color", question: "What color is this banana? (กล้วยหอมสีนี้คือสีอะไร?)", visual: "🍌", options: ["Red (สีแดง)", "Blue (สีน้ำเงิน)", "Yellow (สีเหลือง)"], answer: "Yellow (สีเหลือง)", explanation: "กล้วยสุกสีเหลืองสดใส ภาษาอังกฤษคือคำว่า Yellow (เยลโล่ว) สะกดด้วย Y-E-L-L-O-W ครับ!" },
-      { id: "kg_e7", type: "vocabulary", question: "What animal is this? (สัตว์ตัวนี้คืออะไร?)", visual: "🐱", options: ["Cat (แมว)", "Dog (สุนัข)", "Pig (หมู)"], answer: "Cat (แมว)", explanation: "สัตว์เลี้ยงน่ารักร้องเหมียวๆ คือ แมว ภาษาอังกฤษพูดว่า Cat (แคท) สะกด C-A-T ครับ!" },
-      { id: "kg_e8", type: "vocabulary", question: "What animal is this? (สัตว์ตัวนี้คืออะไร?)", visual: "🐶", options: ["Cat (แมว)", "Dog (สุนัข)", "Pig (หมู)"], answer: "Dog (สุนัข)", explanation: "สัตว์เลี้ยงสี่ขาเฝ้าบ้านคือ สุนัข ภาษาอังกฤษพูดว่า Dog (ด็อก) สะกด D-O-G ครับ!" },
-      { id: "kg_e9", type: "alphabet", question: "Which letter is lowercase d? (อักษรพิมพ์เล็ก d)", visual: "D vs d", options: ["b", "d", "q"], answer: "d", explanation: "ตัวพิมพ์เล็กคือ d มีเส้นตรงขึ้นบนและก้นป่องไปทางซ้าย (d) จำสลับกับ b ดีๆ นะครับ!" },
-      { id: "kg_e10", type: "phonics", question: "What sound does the letter 'C' make? (ตัวอักษร C ออกเสียงอะไร?)", visual: "Letter C", options: ["แอะ (ae)", "เบอะ (be)", "เคอะ (ke)"], answer: "เคอะ (ke)", explanation: "ในระบบโฟนิกส์ ตัวอักษร C ออกเสียงว่า 'เคอะ' (ke) เช่น C-C-Cat (เคอะ-เคอะ-แคท) ครับ!" }
+      { id: "kg_e1", type: "alphabet", question: "Match the word CAT with the correct image: (จับคู่คำว่า CAT กับรูปภาพ)", visual: "<div style='font-size:1.8rem; font-weight:bold; background:#fff; color:#333; padding:8px 16px; border-radius:8px;'>C A T</div>", options: ["🐱 Cat", "🐶 Dog", "🐷 Pig"], answer: "🐱 Cat", explanation: "คำว่า CAT แปลว่า แมว ซึ่งตรงกับรูปแมวเหมียว 🐱 ครับ!" },
+      { id: "kg_e2", type: "alphabet", question: "Match the word DOG with the correct image: (จับคู่คำว่า DOG กับรูปภาพ)", visual: "<div style='font-size:1.8rem; font-weight:bold; background:#fff; color:#333; padding:8px 16px; border-radius:8px;'>D O G</div>", options: ["🐱 Cat", "🐶 Dog", "🐷 Pig"], answer: "🐶 Dog", explanation: "คำว่า DOG แปลว่า สุนัข ซึ่งตรงกับรูปตูบแสนรู้ 🐶 ครับ!" },
+      { id: "kg_e3", type: "phonics", question: "What color is the strawberry? (สตรอว์เบอร์รี่มีสีอะไร?)", visual: "<span style='font-size:3.5rem;'>🍓</span>", options: ["🔴 Red (สีแดง)", "🟡 Yellow (สีเหลือง)", "🟢 Green (สีเขียว)"], answer: "🔴 Red (สีแดง)", explanation: "สตรอว์เบอร์รี่ผลนี้มีสีแดง ภาษาอังกฤษคือคำว่า Red (เรด) สะกดด้วย R-E-D ครับ!" },
+      { id: "kg_e4", type: "phonics", question: "What color is the banana? (กล้วยหอมมีสีอะไร?)", visual: "<span style='font-size:3.5rem;'>🍌</span>", options: ["🔴 Red (สีแดง)", "🟡 Yellow (สีเหลือง)", "🟢 Green (สีเขียว)"], answer: "🟡 Yellow (สีเหลือง)", explanation: "กล้วยสุกสีเหลืองสดใส ภาษาอังกฤษคือคำว่า Yellow (เยลโล่ว) สะกดด้วย Y-E-L-L-O-W ครับ!" },
+      { id: "kg_e5", type: "color", question: "What color is the broccoli? (บล็อคโคลี่มีสีอะไร?)", visual: "<span style='font-size:3.5rem;'>🥦</span>", options: ["🔴 Red (สีแดง)", "🟡 Yellow (สีเหลือง)", "🟢 Green (สีเขียว)"], answer: "🟢 Green (สีเขียว)", explanation: "บล็อคโคลี่เป็นผักมีสีเขียวสดใส ภาษาอังกฤษคือคำว่า Green (กรีน) สะกดด้วย G-R-E-E-N ครับ!" },
+      { id: "kg_e6", type: "color", question: "Which letter starts the word: Apple 🍎? (ขึ้นต้นคำว่า Apple)", visual: "<span style='font-size:3.5rem;'>🍎</span>", options: ["🅰️ Letter A", "🅱️ Letter B", "🅲️ Letter C"], answer: "🅰️ Letter A", explanation: "Apple ขึ้นต้นด้วยหน่วยเสียง แอะ ซึ่งตรงคู่กับตัวอักษร A ครับ!" },
+      { id: "kg_e7", type: "vocabulary", question: "Which letter starts the word: Banana 🍌? (ขึ้นต้นคำว่า Banana)", visual: "<span style='font-size:3.5rem;'>🍌</span>", options: ["🅰️ Letter A", "🅱️ Letter B", "🅲️ Letter C"], answer: "🅱️ Letter B", explanation: "Banana ขึ้นต้นด้วยหน่วยเสียง เบอะ ซึ่งตรงคู่กับตัวอักษร B ครับ!" },
+      { id: "kg_e8", type: "vocabulary", question: "Which letter starts the word: Cat 🐱? (ขึ้นต้นคำว่า Cat)", visual: "<span style='font-size:3.5rem;'>🐱</span>", options: ["🅰️ Letter A", "🅱️ Letter B", "🅲️ Letter C"], answer: "🅲️ Letter C", explanation: "Cat ขึ้นต้นด้วยหน่วยเสียง เคอะ ซึ่งตรงคู่กับตัวอักษร C ครับ!" },
+      { id: "kg_e9", type: "alphabet", question: "Match the big letter A with its small letter: (จับคู่พิมพ์ใหญ่ A กับพิมพ์เล็ก)", visual: "<span style='font-size:3.5rem;'>🅰️ ➔ ❓</span>", options: ["a", "b", "c"], answer: "a", explanation: "ตัวอักษรพิมพ์เล็กของตัว 🅰️ คือตัว a นั่นเองครับเด็กๆ!" },
+      { id: "kg_e10", type: "phonics", question: "Match the big letter B with its small letter: (จับคู่พิมพ์ใหญ่ B กับพิมพ์เล็ก)", visual: "<span style='font-size:3.5rem;'>🅱️ ➔ ❓</span>", options: ["a", "b", "c"], answer: "b", explanation: "ตัวอักษรพิมพ์เล็กของตัว 🅱️ คือตัว b นั่นเองครับเด็กๆ!" }
     ]
   },
   "level-p1": {
@@ -194,7 +194,7 @@ window.questionsData = {
 };
 
 window.lessonsData = {
-  "level-kg": [
+    "level-kg": [
     {
       id: "kg_les_count",
       title: "Math Ch.1: Counting 1-5 🍎 (นับเลขแสนสนุก 1-5)",
@@ -203,16 +203,16 @@ window.lessonsData = {
       badgeName: "Counting Bunny",
       badgeEmoji: "🐰",
       slides: [
-        { text: "สวัสดีครับคุณหนูๆ และผู้ปกครอง! ครูนกฮูก 🦉 ยินดีต้อนรับสู่บทเรียนนับเลข **1 ถึง 5** ไปด้วยกันนะ!<br><br>มาจำหน้าตาและออกเสียงตัวเลขไปพร้อมกันครับ:<br>• **1** (หนึ่ง) | **2** (สอง)<br>• **3** (สาม) | **4** (สี่)<br>• **5** (ห้า)", visual: "1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣" },
-        { text: "เทคนิคการนับ: **ใช้นิ้วชี้จิ้มสิ่งของแล้วเปล่งเสียงตามจังหวะ** เพื่อให้เด็กเชื่อมโยงวัตถุกับตัวเลข เช่นนับแอปเปิ้ล:<br><br>• จิ้มผลแรก 🍎 ➔ พูดดังๆ ว่า **'หนึ่ง!'**<br>• จิ้มผลที่สอง 🍎 ➔ พูดว่า **'สอง!'**<br>• จิ้มผลที่สาม 🍎 ➔ พูดว่า **'สาม!'**<br>ตัวเลขสุดท้ายที่เราพูดออกเสียงออกมาก็คือจำนวนรวมทั้งหมด สรุปมีแอปเปิ้ล **3 ผล** ครับ!", visual: "👆 🍎 🍎 🍎" },
-        { text: "🎓 **คู่มือสำหรับผู้ปกครอง (Parent Guide):**<br><br>• **เป้าหมาย**: พัฒนาทักษะการจับคู่หนึ่งต่อหนึ่ง (One-to-one correspondence) ของเด็ก<br>• **วิธีสอน**: หยิบแอปเปิ้ลหรือของเล่นในบ้านมาวาง ชี้มือเด็กจิ้มไปพร้อมกันทีละชิ้น ห้ามชี้ข้ามหรือนับเร็วไป<br>• **ข้อควรระวัง**: เด็กบางคนนับปากเปล่าเร็วเกินตัวชี้ ให้จับมือชี้ของและนับให้จังหวะตรงกันครับ", visual: "👨‍👩‍👧‍👦 Parent Tip" }
+        { text: "สวัสดีครับคุณหนูๆ และผู้ปกครอง! ครูนกฮูก 🦉 ยินดีต้อนรับสู่บทเรียนนับเลข **1 ถึง 5** ไปด้วยกันนะ!<br><br>มาจำหน้าตาและออกเสียงตัวเลขไปพร้อมกันครับ:<br>• **1** (หนึ่ง) | **2** (สอง)<br>• **3** (สาม) | **4** (สี่)<br>• **5** (ห้า)", visual: "<span style='font-size:3.5rem;'>1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣</span>" },
+        { text: "เทคนิคการนับ: **ใช้นิ้วชี้จิ้มสิ่งของแล้วเปล่งเสียงตามจังหวะ** เพื่อให้เด็กเชื่อมโยงวัตถุกับตัวเลข เช่นนับแอปเปิ้ล:<br><br>• จิ้มผลแรก 🍎 ➔ พูดดังๆ ว่า **'หนึ่ง!'**<br>• จิ้มผลที่สอง 🍎 ➔ พูดว่า **'สอง!'**<br>• จิ้มผลที่สาม 🍎 ➔ พูดว่า **'สาม!'**<br>ตัวเลขสุดท้ายที่เราพูดออกเสียงออกมาก็คือจำนวนรวมทั้งหมด สรุปมีแอปเปิ้ล **3 ผล** ครับ!", visual: "<span style='font-size:3.5rem;'>👆 🍎 🍎 🍎</span>" },
+        { text: "🎓 **คู่มือสำหรับผู้ปกครอง (Parent Guide):**<br><br>• **เป้าหมาย**: พัฒนาทักษะการจับคู่หนึ่งต่อหนึ่ง (One-to-one correspondence) ของเด็ก<br>• **วิธีสอน**: หยิบแอปเปิ้ลหรือของเล่นในบ้านมาวาง ชี้มือเด็กจิ้มไปพร้อมกันทีละชิ้น ห้ามชี้ข้ามหรือนับเร็วไป<br>• **ข้อควรระวัง**: เด็กบางคนนับปากเปล่าเร็วเกินตัวชี้ ให้จับมือชี้ของและนับให้จังหวะตรงกันครับ", visual: "👨‍👩‍👧‍👦 คู่มือผู้ปกครอง" }
       ],
       postTest: [
-        { question: "How many apples? (มีแอปเปิ้ลกี่ผล?)", visual: "🍎🍎", options: ["1", "2", "3"], answer: "2", explanation: "จิ้มนับแอปเปิ้ลทีละผล: 1, 2 รวมมีทั้งหมด 2 ผลพอดีครับ!" },
-        { question: "How many carrots? (มีแครอทกี่หัว?)", visual: "🥕🥕🥕🥕", options: ["3", "4", "5"], answer: "4", explanation: "จิ้มนับแครอททีละหัวจนถึงหัวสุดท้าย: 1, 2, 3, 4 หัวพอดีครับ!" },
-        { question: "How many ducks? (มีเป็ดกี่ตัว?)", visual: "🦆", options: ["1", "2", "3"], answer: "1", explanation: "มีเป็ดว่ายน้ำอยู่เพียง 1 ตัวเท่านั้น ดังนั้นตอบ 1 ครับ!" },
-        { question: "How many pigs? (มีหมูกี่ตัว?)", visual: "🐷🐷🐷", options: ["2", "3", "4"], answer: "3", explanation: "จิ้มนับหมูทีละตัว: 1, 2, 3 ตัวพอดี ตอบ 3 ครับ!" },
-        { question: "How many eggs? (มีไข่กี่ฟอง?)", visual: "🥚🥚🥚🥚🥚", options: ["4", "5", "6"], answer: "5", explanation: "จิ้มนับไข่ในรังทีละฟองได้ทั้งหมด 5 ฟองพอดีครับ!" }
+        { question: "How many apples? (มีแอปเปิ้ลกี่ผล?)", visual: "<span style='font-size:3.5rem;'>🍎🍎</span>", options: ["1", "2", "3"], answer: "2", explanation: "จิ้มนับแอปเปิ้ลทีละผล: 1, 2 รวมมีทั้งหมด 2 ผลพอดีครับ!" },
+        { question: "How many carrots? (มีแครอทกี่หัว?)", visual: "<span style='font-size:3.5rem;'>🥕🥕🥕🥕</span>", options: ["3", "4", "5"], answer: "4", explanation: "จิ้มนับแครอททีละหัวจนถึงหัวสุดท้าย: 1, 2, 3, 4 หัวพอดีครับ!" },
+        { question: "How many ducks? (มีเป็ดกี่ตัว?)", visual: "<span style='font-size:3.5rem;'>🦆</span>", options: ["1", "2", "3"], answer: "1", explanation: "มีเป็ดว่ายน้ำอยู่เพียง 1 ตัวเท่านั้น ดังนั้นตอบ 1 ครับ!" },
+        { question: "How many pigs? (มีหมูกี่ตัว?)", visual: "<span style='font-size:3.5rem;'>🐷🐷🐷</span>", options: ["2", "3", "4"], answer: "3", explanation: "จิ้มนับหมูทีละตัว: 1, 2, 3 ตัวพอดี ตอบ 3 ครับ!" },
+        { question: "How many eggs? (มีไข่กี่ฟอง?)", visual: "<span style='font-size:3.5rem;'>🥚🥚🥚🥚🥚</span>", options: ["4", "5", "6"], answer: "5", explanation: "จิ้มนับไข่ในรังทีละฟองได้ทั้งหมด 5 ฟองพอดีครับ!" }
       ]
     },
     {
@@ -223,16 +223,16 @@ window.lessonsData = {
       badgeName: "Shape Finder",
       badgeEmoji: "🎨",
       slides: [
-        { text: "บทเรียนต่อมาคือการจำแนก **รูปทรงพื้นฐาน** สามเหลี่ยม สี่เหลี่ยม และวงกลมครับ:<br><br>• 🔴 **วงกลม (Circle)**: เส้นโค้งวนกลมเกลี้ยง ไม่มีขอบไม่มีมุมแหลม<br>• 🟦 **สี่เหลี่ยม (Square)**: มี 4 มุม มี 4 ด้านเท่ากัน ตรงระเบียบ<br>• 🔺 **สามเหลี่ยม (Triangle)**: มี 3 ด้าน มีมุมแหลม 3 มุมชี้ฟ้า", visual: "🔴 🟦 🔺" },
-        { text: "ในชีวิตจริงเรามองเห็นรูปทรงเหล่านี้ทุกที่ เช่น:<br><br>• 🪙 **เงินเหรียญ** ➔ เป็นรูป **วงกลม (Circle)**<br>• 📦 **กล่องพัสดุ** ➔ เป็นรูป **สี่เหลี่ยม (Square)**<br>• 🍕 **ชิ้นพิซซ่า** ➔ เป็นรูป **สามเหลี่ยม (Triangle)**<br>ลองชวนลูกมองสิ่งของรอบตัวแล้วทายดูนะ!", visual: "🪙 📦 🍕" },
-        { text: "🎓 **คู่มือสำหรับผู้ปกครอง (Parent Guide):**<br><br>• **เป้าหมาย**: เสริมทักษะการรับรู้และการจำแนกทางมิติสัมพันธ์เบื้องต้น<br>• **วิธีสอน**: ลากเส้นแต่ละรูปทรงลงกระดาษ หรือให้เด็กลากนิ้วสัมผัสขอบจาน (วงกลม) หรือมุมกล่องนม (สี่เหลี่ยม) เพื่อทำความเข้าใจขอบข่ายรูปทรงด้วยประสาทสัมผัส<br>• **คำถามนำ**: 'แซนวิชชิ้นนี้เป็นรูปทรงอะไรนะ?' ชี้ให้เขานับมุมแหลมร่วมกัน", visual: "👨‍👩‍👧‍👦 Parent Tip" }
+        { text: "บทเรียนต่อมาคือการจำแนก **รูปทรงพื้นฐาน** สามเหลี่ยม สี่เหลี่ยม และวงกลมครับ:<br><br>• 🔴 **วงกลม (Circle)**: เส้นโค้งวนกลมเกลี้ยง ไม่มีขอบไม่มีมุมแหล<br>• 🟦 **สี่เหลี่ยม (Square)**: มี 4 มุม มี 4 ด้านเท่ากัน ตรงระเบียบ<br>• 🔺 **สามเหลี่ยม (Triangle)**: มี 3 ด้าน มีมุมแหลม 3 มุมชี้ฟ้า", visual: "<span style='font-size:3.5rem;'>🔴 🟦 🔺</span>" },
+        { text: "ในชีวิตจริงเรามองเห็นรูปทรงเหล่านี้ทุกที่ เช่น:<br><br>• 🪙 **เงินเหรียญ** ➔ เป็นรูป **วงกลม (Circle)**<br>• 📦 **กล่องพัสดุ** ➔ เป็นรูป **สี่เหลี่ยม (Square)**<br>• 🍕 **ชิ้นพิซซ่า** ➔ เป็นรูป **สามเหลี่ยม (Triangle)**<br>ลองชวนลูกมองสิ่งของรอบตัวแล้วทายดูนะ!", visual: "<span style='font-size:3.5rem;'>🪙 📦 🍕</span>" },
+        { text: "🎓 **คู่มือสำหรับผู้ปกครอง (Parent Guide):**<br><br>• **เป้าหมาย**: เสริมทักษะการรับรู้และการจำแนกทางมิติสัมพันธ์เบื้องต้น<br>• **วิธีสอน**: ลากเส้นแต่ละรูปทรงลงกระดาษ หรือให้เด็กลากนิ้วสัมผัสขอบจาน (วงกลม) หรือมุมกล่องนม (สี่เหลี่ยม) เพื่อทำความเข้าใจขอบข่ายรูปทรงด้วยประสาทสัมผัส<br>• **คำถามนำ**: 'แซนวิชชิ้นนี้เป็นรูปทรงอะไรนะ?' ชี้ให้เขานับมุมแหลมร่วมกัน", visual: "👨‍👩‍👧‍👦 คู่มือผู้ปกครอง" }
       ],
       postTest: [
-        { question: "Which shape is a circle? (รูปทรงใดคือวงกลม?)", visual: "🔴", options: ["Circle", "Square", "Triangle"], answer: "Circle", explanation: "เส้นโค้งมนไม่มีมุมแหลมคือกดวงกลม (Circle) ครับ!" },
-        { question: "Which shape is a square? (รูปทรงใดคือสี่เหลี่ยม?)", visual: "🟦", options: ["Circle", "Square", "Triangle"], answer: "Square", explanation: "มี 4 มุมและ 4 ด้านตรงเท่ากันคือกดรูปทรงสี่เหลี่ยม (Square) ครับ!" },
-        { question: "Which shape is a triangle? (รูปทรงใดคือสามเหลี่ยม?)", visual: "🔺", options: ["Circle", "Square", "Triangle"], answer: "Triangle", explanation: "มี 3 มุมแหลมเหมือนหลังคาจั่วคือกดรูปทรงสามเหลี่ยม (Triangle) ครับ!" },
-        { question: "What shape is a coin? (เงินเหรียญมีรูปทรงแบบใด?)", visual: "🪙", options: ["Circle", "Square", "Triangle"], answer: "Circle", explanation: "เงินเหรียญมีลักษณะโค้งมนแบนเรียบ ไม่มีมุมฉาก จึงเป็นวงกลมครับ!" },
-        { question: "What shape is a package box? (กล่องพัสดุเป็นรูปทรงอะไร?)", visual: "📦", options: ["Circle", "Square", "Triangle"], answer: "Square", explanation: "กล่องพัสดุมี 4 ด้านเท่ากันและมุมฉาก จึงเปรียบเป็นรูปสี่เหลี่ยมครับ!" }
+        { question: "Which shape is a circle? (รูปทรงใดคือวงกลม?)", visual: "<span style='font-size:3.5rem;'>🔴</span>", options: ["Circle", "Square", "Triangle"], answer: "Circle", explanation: "เส้นโค้งมนไม่มีมุมแหลมคือกดวงกลม (Circle) ครับ!" },
+        { question: "Which shape is a square? (รูปทรงใดคือสี่เหลี่ยม?)", visual: "<span style='font-size:3.5rem;'>🟦</span>", options: ["Circle", "Square", "Triangle"], answer: "Square", explanation: "มี 4 มุมและ 4 ด้านตรงเท่ากันคือกดรูปทรงสี่เหลี่ยม (Square) ครับ!" },
+        { question: "Which shape is a triangle? (รูปทรงใดคือสามเหลี่ยม?)", visual: "<span style='font-size:3.5rem;'>🔺</span>", options: ["Circle", "Square", "Triangle"], answer: "Triangle", explanation: "มี 3 มุมแหลมเหมือนหลังคาจั่วคือกดรูปทรงสามเหลี่ยม (Triangle) ครับ!" },
+        { question: "What shape is a coin? (เงินเหรียญมีรูปทรงแบบใด?)", visual: "<span style='font-size:3.5rem;'>🪙</span>", options: ["Circle", "Square", "Triangle"], answer: "Circle", explanation: "เงินเหรียญมีลักษณะโค้งมนแบนเรียบ ไม่มีมุมฉาก จึงเป็นวงกลมครับ!" },
+        { question: "What shape is a package box? (กล่องพัสดุเป็นรูปทรงอะไร?)", visual: "<span style='font-size:3.5rem;'>📦</span>", options: ["Circle", "Square", "Triangle"], answer: "Square", explanation: "กล่องพัสดุมี 4 ด้านเท่ากันและมุมฉาก จึงเปรียบเป็นรูปสี่เหลี่ยมครับ!" }
       ]
     },
     {
@@ -243,16 +243,16 @@ window.lessonsData = {
       badgeName: "Phonics Baby",
       badgeEmoji: "👶",
       slides: [
-        { text: "สวัสดีครับผู้ปกครอง! ยินดีต้อนรับสู่บทเรียน **Phonics** เสียงตัวอักษร A, B, C เบื้องต้นครับ:<br><br>ในการหัดอ่านภาษาอังกฤษ เด็กๆ ไม่ควรอ่านแค่ชื่ออักษร เอ-บี-ซี แต่ต้องจำ **เสียงพยัญชนะต้น** ของอักษรเหล่านั้นให้ได้ก่อน เพื่อใช้สะกดคำในอนาคตครับ!", visual: "A B C" },
-        { text: "ออกเสียงตามครูนกฮูกนะเด็กๆ:<br><br>• 🅰️ **Letter A** ➔ ออกเสียงสั้นว่า **'แอะ'** (ae) เช่น A-A-Apple<br>• 🅱️ **Letter B** ➔ ออกเสียงพยัญชนะต้น **'เบอะ'** (be) เช่น B-B-Banana<br>• 🅾️ **Letter C** ➔ ออกเสียงกักเสียง **'เคอะ'** (ke) เช่น C-C-Cat<br>ลองเลียนเสียงตามจังหวะเสียงสนุกๆ ดูนะ!", visual: "🍎 🍌 🐱" },
-        { text: "🎓 **คู่มือสำหรับผู้ปกครอง (Parent Guide):**<br><br>• **เป้าหมาย**: ช่วยเด็กออกเสียงต้นเสียงภาษาอังกฤษ (Initial Sounds) ได้ถูกต้อง<br>• **วิธีสอน**: ออกเสียงเน้นย้ำเสียงแรกชัด ๆ เช่น พูด 'แอะ-แอะ-แอปเปิ้ล' หรือ 'เคอะ-เคอะ-แคท' ชวนให้ลูกสังเกตริมฝีปากและช่องคอขณะเปล่งเสียง<br>• **เกร็ดความรู้**: หลีกเลี่ยงการออกเสียงปนสะกดภาษาไทยแบบไม่มีพยัญชนะสะกัด ฝึกบ่อยๆ วันละ 5 นาทีจะช่วยการหัดสะกดคำ (Blending) ในระดับประถมได้ดีมากครับ", visual: "👨‍👩‍👧‍👦 Parent Tip" }
+        { text: "สวัสดีครับผู้ปกครอง! ยินดีต้อนรับสู่บทเรียน **Phonics** เสียงตัวอักษร A, B, C เบื้องต้นครับ:<br><br>ในการหัดอ่านภาษาอังกฤษ เด็กๆ ไม่ควรอ่านแค่ชื่ออักษร เอ-บี-ซี แต่ต้องจำ **เสียงพยัญชนะต้น** ของอักษรเหล่านั้นให้ได้ก่อน เพื่อใช้สะกดคำในอนาคตครับ!", visual: "<span style='font-size:3.5rem;'>🅰️ 🅱️ 🅲️</span>" },
+        { text: "ออกเสียงตามครูนกฮูกนะเด็กๆ:<br><br>• 🅰️ **Letter A** ➔ ออกเสียงสั้นว่า **'แอะ'** (ae) เช่น A-A-Apple<br>• 🅱️ **Letter B** ➔ ออกเสียงพยัญชนะต้น **'เบอะ'** (be) เช่น B-B-Banana<br>• 🅾️ **Letter C** ➔ ออกเสียงกักเสียง **'เคอะ'** (ke) เช่น C-C-Cat<br>ลองเลียนเสียงตามจังหวะเสียงสนุกๆ ดูนะ!", visual: "<span style='font-size:3.5rem;'>🍎 🍌 🐱</span>" },
+        { text: "🎓 **คู่มือสำหรับผู้ปกครอง (Parent Guide):**<br><br>• **เป้าหมาย**: ช่วยเด็กออกเสียงต้นเสียงภาษาอังกฤษ (Initial Sounds) ได้ถูกต้อง<br>• **วิธีสอน**: ออกเสียงเน้นย้ำเสียงแรกชัด ๆ เช่น พูด 'แอะ-แอะ-แอปเปิ้ล' หรือ 'เคอะ-เคอะ-แคท' ชวนให้ลูกสังเกตริมฝีปากและช่องคอขณะเปล่งเสียง<br>• **เกร็ดความรู้**: หลีกเลี่ยงการออกเสียงปนสะกดภาษาไทยแบบไม่มีพยัญชนะสะกัด ฝึกบ่อยๆ วันละ 5 นาทีจะช่วยการหัดสะกดคำ (Blending) ในระดับประถมได้ดีมากครับ", visual: "👨‍👩‍👧‍👦 คู่มือผู้ปกครอง" }
       ],
       postTest: [
-        { question: "What sound does the letter 'A' make? (เสียงโฟนิกส์ตัว A)", visual: "A", options: ["แอะ (ae)", "เบอะ (be)", "เคอะ (ke)"], answer: "แอะ (ae)", explanation: "อักษร A แทนหน่วยเสียงสระสั้นสะท้อนออกเสียง แอะ (ae) ครับ!" },
-        { question: "What sound does the letter 'B' make? (เสียงโฟนิกส์ตัว B)", visual: "B", options: ["แอะ (ae)", "เบอะ (be)", "เดอะ (de)"], answer: "เบอะ (be)", explanation: "อักษร B แทนเสียงพยัญชนะต้นเปล่งลมปาก เบอะ (be) ครับ!" },
-        { question: "What sound does the letter 'C' make? (เสียงโฟนิกส์ตัว C)", visual: "C", options: ["เบอะ (be)", "เคอะ (ke)", "เดอะ (de)"], answer: "เคอะ (ke)", explanation: "อักษร C แทนเสียงพยัญชนะต้นกักลมลำคอ เคอะ (ke) ครับ!" },
-        { question: "What letter starts the word: 'Apple' (แอะ-แอะ-แอปเปิ้ล)?", visual: "🍎", options: ["A", "B", "C"], answer: "A", explanation: "Apple ขึ้นต้นด้วยหน่วยเสียงสะกด แอะ ซึ่งตรงคู่กับตัวอักษร A ครับ!" },
-        { question: "What letter starts the word: 'Cat' (เคอะ-เคอะ-แคท)?", visual: "🐱", options: ["A", "B", "C"], answer: "C", explanation: "Cat ขึ้นต้นด้วยหน่วยเสียง เคอะ ซึ่งตรงคู่กับตัวอักษร C ครับ!" }
+        { question: "What sound does the letter 'A' make? (เสียงโฟนิกส์ตัว A)", visual: "<span style='font-size:3.5rem;'>🅰️</span>", options: ["แอะ (ae)", "เบอะ (be)", "เคอะ (ke)"], answer: "แอะ (ae)", explanation: "อักษร A แทนหน่วยเสียงสระสั้นสะท้อนออกเสียง แอะ (ae) ครับ!" },
+        { question: "What sound does the letter 'B' make? (เสียงโฟนิกส์ตัว B)", visual: "<span style='font-size:3.5rem;'>🅱️</span>", options: ["แอะ (ae)", "เบอะ (be)", "เดอะ (de)"], answer: "เบอะ (be)", explanation: "อักษร B แทนเสียงพยัญชนะต้นเปล่งลมปาก เบอะ (be) ครับ!" },
+        { question: "What sound does the letter 'C' make? (เสียงโฟนิกส์ตัว C)", visual: "<span style='font-size:3.5rem;'>🅲️</span>", options: ["เบอะ (be)", "เคอะ (ke)", "เดอะ (de)"], answer: "เคอะ (ke)", explanation: "อักษร C แทนเสียงพยัญชนะต้นกักลมลำคอ เคอะ (ke) ครับ!" },
+        { question: "What letter starts the word: 'Apple' (แอะ-แอะ-แอปเปิ้ล)?", visual: "<span style='font-size:3.5rem;'>🍎</span>", options: ["A", "B", "C"], answer: "A", explanation: "Apple ขึ้นต้นด้วยหน่วยเสียง แอะ ซึ่งตรงคู่กับตัวอักษร A ครับ!" },
+        { question: "What letter starts the word: 'Cat' (เคอะ-เคอะ-แคท)?", visual: "<span style='font-size:3.5rem;'>🐱</span>", options: ["A", "B", "C"], answer: "C", explanation: "Cat ขึ้นต้นด้วยหน่วยเสียง เคอะ ซึ่งตรงคู่กับตัวอักษร C ครับ!" }
       ]
     }
   ],

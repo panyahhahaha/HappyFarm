@@ -1350,14 +1350,14 @@ function showQuizModal(title) {
   els.modalTitle.textContent = title;
   const q = activeQuiz.question;
   els.questionText.textContent = q.question;
-  els.questionVisual.textContent = q.visual;
+  els.questionVisual.innerHTML = q.visual || '';
   els.questionOptions.innerHTML = '';
   
   const options = [...q.options];
   options.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'option-btn';
-    btn.textContent = opt;
+    btn.innerHTML = opt;
     btn.addEventListener('click', () => handleOptionClick(opt, btn));
     els.questionOptions.appendChild(btn);
   });
@@ -1603,14 +1603,14 @@ function renderPostTestQuestion() {
   els.owlTestExplanationBox.style.display = 'none';
   
   els.owlTestTracker.textContent = `Question ${activeLessonState.testQuestionIdx + 1} of ${topic.postTest.length}`;
-  els.owlTestVisual.textContent = q.visual;
+  els.owlTestVisual.innerHTML = q.visual || '';
   els.owlTestQuestion.textContent = q.question;
   
   els.owlTestOptions.innerHTML = '';
   q.options.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'option-btn';
-    btn.textContent = opt;
+    btn.innerHTML = opt;
     btn.addEventListener('click', () => handlePostTestAnswer(opt, btn));
     els.owlTestOptions.appendChild(btn);
   });
