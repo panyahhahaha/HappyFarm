@@ -1973,7 +1973,7 @@ function startLesson(topic) {
   savedStudentPage = 0;
   currentClassroomTab = 'student';
 
-  els.owlClassroomTitle.textContent = `Owl Classroom: ${topic.title}`;
+  els.owlClassroomTitle.textContent = `Pearn rean pean sanook: ${topic.title}`;
   
   // Set tab active state
   els.btnTabStudent.classList.add('active');
@@ -2395,6 +2395,17 @@ let groundMesh;
 let active3DPlots = [];
 let active3DAnimals = [];
 let active3DParticles = [];
+let farmerHelper3D = {
+  mesh: null,
+  state: 'idle', // 'idle', 'walking', 'working'
+  targetPos: null,
+  wanderTimer: 0,
+  animTime: 0,
+  emojiTimer: 0,
+  activeEmojiSprite: null,
+  currentTask: null,
+  workTimer: 0
+};
 let weather3DParticlesGroup = null;
 let truck3DMesh = null;
 let canvasEngineRunning = false;
@@ -2539,6 +2550,7 @@ function gameLoop(timestamp) {
   update3DParticles(dt);
   updateTruck3D(dt);
   updateWaterDrops3D(dt);
+  updateFarmerHelper3D(dt);
   
   // Update quests
   updateQuests(dt);
@@ -2745,6 +2757,7 @@ function build3DWorld() {
   build3DTree(30, 10);
   build3DTree(28, 25);
   build3DTree(-10, 28);
+  initFarmerHelper3D();
 }
 
 function build3DTree(tx, tz) {
@@ -2812,6 +2825,385 @@ function buildPastureFenceLine(x1, z1, x2, z2, segments, isVertical) {
     }
   }
   scene.add(group);
+}
+
+function initFarmerHelper3D() {
+  if (!scene) return;
+  
+  if (farmerHelper3D.mesh) {
+    scene.remove(farmerHelper3D.mesh);
+    farmerHelper3D.mesh = null;
+  }
+  
+  if (farmerHelper3D.activeEmojiSprite) {
+    scene.remove(farmerHelper3D.activeEmojiSprite);
+    farmerHelper3D.activeEmojiSprite = null;
+  }
+
+  const farmerGroup = new THREE.Group();
+  farmerGroup.position.set(-10, 0, -10);
+  
+  const skinMat = new THREE.MeshLambertMaterial({ color: 0xffd54f });
+  const shirtMat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
+  const pantsMat = new THREE.MeshLambertMaterial({ color: 0x5e35b1 });
+  const bootsMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+  const hatMat = new THREE.MeshLambertMaterial({ color: 0xffb74d });
+
+  const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.7, 0.35), bootsMat);
+  lLeg.name = "lLeg";
+  lLeg.position.set(0.22, 0.35, 0);
+  lLeg.castShadow = true;
+  farmerGroup.add(lLeg);
+
+  const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.7, 0.35), bootsMat);
+  rLeg.name = "rLeg";
+  rLeg.position.set(-0.22, 0.35, 0);
+  rLeg.castShadow = true;
+  farmerGroup.add(rLeg);
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 0.6), shirtMat);
+  body.name = "body";
+  body.position.set(0, 1.25, 0);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  farmerGroup.add(body);
+
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), skinMat);
+  head.name = "head";
+  head.position.set(0, 2.15, 0);
+  head.castShadow = true;
+  farmerGroup.add(head);
+
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.08, 8), hatMat);
+  brim.position.set(0, 2.52, 0);
+  brim.castShadow = true;
+  farmerGroup.add(brim);
+
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.35, 8), hatMat);
+  crown.position.set(0, 2.72, 0);
+  crown.castShadow = true;
+  farmerGroup.add(crown);
+
+  const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.8, 0.24), skinMat);
+  lArm.name = "lArm";
+  lArm.position.set(0.58, 1.35, 0);
+  lArm.castShadow = true;
+  farmerGroup.add(lArm);
+
+  const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.8, 0.24), skinMat);
+  rArm.name = "rArm";
+  rArm.position.set(-0.58, 1.35, 0);
+  rArm.castShadow = true;
+  farmerGroup.add(rArm);
+
+  scene.add(farmerGroup);
+
+  farmerHelper3D.mesh = farmerGroup;
+  farmerHelper3D.state = 'idle';
+  farmerHelper3D.targetPos = new THREE.Vector3(-10, 0, -10);
+  farmerHelper3D.wanderTimer = 0;
+  farmerHelper3D.animTime = 0;
+  farmerHelper3D.emojiTimer = 0;
+  farmerHelper3D.activeEmojiSprite = null;
+  farmerHelper3D.currentTask = null;
+  farmerHelper3D.workTimer = 0;
+}
+
+function showFarmerEmoji(emojiChar) {
+  if (!scene || !farmerHelper3D.mesh) return;
+  
+  if (farmerHelper3D.activeEmojiSprite) {
+    scene.remove(farmerHelper3D.activeEmojiSprite);
+    farmerHelper3D.activeEmojiSprite = null;
+  }
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.font = '48px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emojiChar, 32, 32);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(material);
+  
+  sprite.position.copy(farmerHelper3D.mesh.position);
+  sprite.position.y += 3.8;
+  sprite.scale.set(2.0, 2.0, 1.0);
+  
+  scene.add(sprite);
+  farmerHelper3D.activeEmojiSprite = sprite;
+  farmerHelper3D.emojiTimer = 1.8;
+}
+
+function updateEmojiSprite(dt) {
+  if (!farmerHelper3D.activeEmojiSprite) return;
+  
+  const sprite = farmerHelper3D.activeEmojiSprite;
+  farmerHelper3D.emojiTimer -= dt;
+  
+  sprite.position.x = farmerHelper3D.mesh.position.x;
+  sprite.position.z = farmerHelper3D.mesh.position.z;
+  sprite.position.y += dt * 1.0;
+  
+  if (farmerHelper3D.emojiTimer <= 0) {
+    scene.remove(sprite);
+    farmerHelper3D.activeEmojiSprite = null;
+  } else {
+    sprite.material.opacity = Math.max(0, farmerHelper3D.emojiTimer / 1.8);
+  }
+}
+
+function spawnWaterEffectParticles(worldPos) {
+  if (!scene) return;
+  const count = 3;
+  for (let i = 0; i < count; i++) {
+    const geom = new THREE.SphereGeometry(0.15, 4, 4);
+    const mat = new THREE.MeshLambertMaterial({ color: 0x00bcd4 });
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.copy(worldPos);
+    mesh.position.y += 0.8;
+    
+    const velocity = new THREE.Vector3(
+      (Math.random() - 0.5) * 4,
+      Math.random() * 5 + 3,
+      (Math.random() - 0.5) * 4
+    );
+    
+    scene.add(mesh);
+    active3DParticles.push({
+      mesh: mesh,
+      velocity: velocity,
+      life: 0.6
+    });
+  }
+}
+
+function spawnStarEffectParticles(worldPos) {
+  if (!scene) return;
+  const count = 8;
+  for (let i = 0; i < count; i++) {
+    const geom = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+    const mat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.copy(worldPos);
+    mesh.position.y += 0.8;
+    
+    const velocity = new THREE.Vector3(
+      (Math.random() - 0.5) * 6,
+      Math.random() * 6 + 4,
+      (Math.random() - 0.5) * 6
+    );
+    
+    scene.add(mesh);
+    active3DParticles.push({
+      mesh: mesh,
+      velocity: velocity,
+      life: 0.8
+    });
+  }
+}
+
+function updateFarmerHelper3D(dt) {
+  if (!scene || !state || !farmerHelper3D.mesh) return;
+
+  const farmer = farmerHelper3D;
+  const mesh = farmer.mesh;
+  
+  farmer.animTime += dt;
+  updateEmojiSprite(dt);
+
+  // 1. Idle Scanning State
+  if (farmer.state === 'idle') {
+    farmer.workTimer += dt;
+    
+    let targetTask = null;
+    
+    // Scan for dry plots (Priority 1)
+    for (let i = 0; i < state.plots.length; i++) {
+      const plot = state.plots[i];
+      if (!plot.isLocked && plot.state === 'growing' && !plot.isWatered) {
+        const row = Math.floor(plot.id / 3);
+        const col = plot.id % 3;
+        const pX = -6 + col * 7.5;
+        const pZ = -2 + row * 7.5;
+        targetTask = { type: 'water', targetId: plot.id, pos: new THREE.Vector3(pX, 0, pZ) };
+        break;
+      }
+    }
+    
+    // Scan for ready plots (Priority 2)
+    if (!targetTask) {
+      for (let i = 0; i < state.plots.length; i++) {
+        const plot = state.plots[i];
+        if (!plot.isLocked && plot.state === 'ready') {
+          const row = Math.floor(plot.id / 3);
+          const col = plot.id % 3;
+          const pX = -6 + col * 7.5;
+          const pZ = -2 + row * 7.5;
+          targetTask = { type: 'harvest', targetId: plot.id, pos: new THREE.Vector3(pX, 0, pZ) };
+          break;
+        }
+      }
+    }
+    
+    // Visit Animals in pen (Priority 3)
+    if (!targetTask && farmer.workTimer > 8.0 && active3DAnimals.length > 0) {
+      const randAnim = active3DAnimals[Math.floor(Math.random() * active3DAnimals.length)];
+      if (randAnim) {
+        targetTask = { type: 'feed', targetId: randAnim.instanceId, pos: randAnim.mesh.position.clone(), animalRef: randAnim };
+      }
+    }
+    
+    if (targetTask) {
+      farmer.currentTask = targetTask;
+      farmer.state = 'walking';
+      farmer.targetPos.copy(targetTask.pos);
+      if (targetTask.type === 'water' || targetTask.type === 'harvest') {
+        farmer.targetPos.z += 2.2;
+      } else {
+        farmer.targetPos.x += 1.0;
+      }
+      showFarmerEmoji('💡');
+    } else {
+      // Idle Wandering
+      farmer.wanderTimer += dt;
+      if (farmer.wanderTimer > 6.0) {
+        farmer.wanderTimer = 0;
+        const wX = -12 + (Math.random() - 0.5) * 10;
+        const wZ = -12 + (Math.random() - 0.5) * 10;
+        farmer.state = 'walking';
+        farmer.targetPos.set(wX, 0, wZ);
+        if (Math.random() > 0.6) {
+          showFarmerEmoji('🎵');
+        }
+      }
+      
+      // Stand idle breathing
+      const body = mesh.getObjectByName('body');
+      if (body) {
+        body.scale.y = 1.0 + Math.sin(farmer.animTime * 3) * 0.02;
+        body.rotation.x = 0;
+      }
+      const lLeg = mesh.getObjectByName('lLeg');
+      const rLeg = mesh.getObjectByName('rLeg');
+      const lArm = mesh.getObjectByName('lArm');
+      const rArm = mesh.getObjectByName('rArm');
+      if (lLeg) lLeg.rotation.x = 0;
+      if (rLeg) rLeg.rotation.x = 0;
+      if (lArm) lArm.rotation.x = 0;
+      if (rArm) rArm.rotation.x = 0;
+      mesh.position.y = 0;
+    }
+  }
+
+  // 2. Walking State
+  if (farmer.state === 'walking') {
+    farmer.workTimer = 0;
+    const currentPos = mesh.position.clone();
+    const distance = currentPos.distanceTo(farmer.targetPos);
+    
+    if (distance > 0.5) {
+      const speed = 5.0;
+      const dir = farmer.targetPos.clone().sub(currentPos).normalize();
+      
+      mesh.position.addScaledVector(dir, speed * dt);
+      
+      const angle = Math.atan2(dir.x, dir.z);
+      mesh.rotation.y = angle;
+
+      const swingSpeed = 12.0;
+      const swing = Math.sin(farmer.animTime * swingSpeed) * 0.5;
+      const lLeg = mesh.getObjectByName('lLeg');
+      const rLeg = mesh.getObjectByName('rLeg');
+      const lArm = mesh.getObjectByName('lArm');
+      const rArm = mesh.getObjectByName('rArm');
+      if (lLeg) lLeg.rotation.x = swing;
+      if (rLeg) rLeg.rotation.x = -swing;
+      if (lArm) lArm.rotation.x = -swing;
+      if (rArm) rArm.rotation.x = swing;
+      
+      mesh.position.y = Math.abs(Math.sin(farmer.animTime * swingSpeed)) * 0.15;
+    } else {
+      if (farmer.currentTask) {
+        farmer.state = 'working';
+        farmer.workTimer = 0;
+      } else {
+        farmer.state = 'idle';
+        mesh.position.y = 0;
+      }
+    }
+  }
+
+  // 3. Working State
+  if (farmer.state === 'working') {
+    farmer.workTimer += dt;
+    
+    const body = mesh.getObjectByName('body');
+    const lArm = mesh.getObjectByName('lArm');
+    const rArm = mesh.getObjectByName('rArm');
+    if (body) body.rotation.x = 0.35;
+    if (lArm) { lArm.rotation.x = 1.2; lArm.rotation.z = Math.sin(farmer.animTime * 20) * 0.15; }
+    if (rArm) { rArm.rotation.x = 1.2; rArm.rotation.z = -Math.sin(farmer.animTime * 20) * 0.15; }
+    
+    if (farmer.currentTask) {
+      const dir = farmer.currentTask.pos.clone().sub(mesh.position).normalize();
+      mesh.rotation.y = Math.atan2(dir.x, dir.z);
+    }
+    
+    if (farmer.currentTask && farmer.currentTask.type === 'water' && Math.random() > 0.7) {
+      spawnWaterEffectParticles(farmer.currentTask.pos);
+    }
+
+    if (farmer.workTimer > 1.8) {
+      const task = farmer.currentTask;
+      if (task.type === 'water') {
+        const plot = state.plots[task.targetId];
+        if (plot && plot.state === 'growing' && !plot.isWatered) {
+          plot.isWatered = true;
+          plot.progress = Math.min(plot.progress + 40, 100);
+          usersDB[currentUser] = state;
+          saveUsersDB();
+          renderAll();
+          AudioEngine.playSFX('water');
+          showFarmerEmoji('🌱');
+        }
+      } else if (task.type === 'harvest') {
+        const plot = state.plots[task.targetId];
+        if (plot && plot.state === 'ready') {
+          const cropKey = plot.cropType;
+          const crop = cropMeta[cropKey];
+          state.harvestStock[cropKey]++;
+          plot.state = 'empty';
+          plot.cropType = null;
+          plot.progress = 0;
+          plot.isWatered = false;
+          addXp(crop.xpReward);
+          usersDB[currentUser] = state;
+          saveUsersDB();
+          renderAll();
+          AudioEngine.playSFX('harvest');
+          showFarmerEmoji('🎉');
+          spawnStarEffectParticles(task.pos);
+        }
+      } else if (task.type === 'feed') {
+        if (task.animalRef) {
+          task.animalRef.jumpTimer = 0.5;
+        }
+        showFarmerEmoji('❤️');
+        spawnStarEffectParticles(task.pos);
+        AudioEngine.playSFX('correct');
+      }
+      
+      farmer.currentTask = null;
+      farmer.state = 'idle';
+      farmer.workTimer = 0;
+      mesh.position.y = 0;
+    }
+  }
 }
 
 function renderPlots3D() {
