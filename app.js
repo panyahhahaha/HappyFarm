@@ -15,10 +15,29 @@ let state = null;
 
 // Crop metadata
 const cropMeta = {
-  carrot: { name: 'Carrot (แครอท)', emoji: '🥕', growTime: 10, xpReward: 10, seedCost: 5, sellPrice: 12 },
-  tomato: { name: 'Tomato (มะเขือเทศ)', emoji: '🍅', growTime: 20, xpReward: 20, seedCost: 10, sellPrice: 28 },
-  corn: { name: 'Corn (ข้าวโพด)', emoji: '🌽', growTime: 30, xpReward: 30, seedCost: 18, sellPrice: 48 },
-  pumpkin: { name: 'Pumpkin (ฟักทอง)', emoji: '🎃', growTime: 45, xpReward: 50, seedCost: 28, sellPrice: 85 }
+  carrot: { name: 'Carrot (แครอท)', emoji: '🥕', growTime: 10, simulatedGrowTime: '1 ชั่วโมง (1 hr)', xpReward: 10, seedCost: 5, sellPrice: 12 },
+  tomato: { name: 'Tomato (มะเขือเทศ)', emoji: '🍅', growTime: 20, simulatedGrowTime: '4 ชั่วโมง (4 hrs)', xpReward: 20, seedCost: 10, sellPrice: 28 },
+  corn: { name: 'Corn (ข้าวโพด)', emoji: '🌽', growTime: 30, simulatedGrowTime: '12 ชั่วโมง (12 hrs)', xpReward: 30, seedCost: 18, sellPrice: 48 },
+  pumpkin: { name: 'Pumpkin (ฟักทอง)', emoji: '🎃', growTime: 45, simulatedGrowTime: '1 วัน (1 day)', xpReward: 50, seedCost: 28, sellPrice: 85 }
+};
+
+// Decorations metadata
+const decorMeta = {
+  flower_red: { name: 'Red Rose 🌹', cost: 20, emoji: '🌹', desc: 'Beautiful red rose flower bed' },
+  flower_sun: { name: 'Sunflower 🌻', cost: 35, emoji: '🌻', desc: 'Bright glowing sunflower' },
+  tree_pine: { name: 'Pine Tree 🌲', cost: 75, emoji: '🌲', desc: 'Tall green pine tree decoration' },
+  tree_cherry: { name: 'Cherry Tree 🌸', cost: 100, emoji: '🌸', desc: 'Pink blossoming cherry tree' },
+  fence_white: { name: 'White Fence 🤍', cost: 15, emoji: '🤍', desc: 'Clean white boundary fence picket' },
+  hay_bale: { name: 'Hay Bale 🌾', cost: 25, emoji: '🌾', desc: 'Cozy country hay bale stack' }
+};
+
+// Outfits metadata
+const outfitMeta = {
+  default: { name: 'Default Blue Shirt 👕', cost: 0, color: 0x1e88e5, pantsColor: 0x5e35b1, hatColor: 0xffb74d, emoji: '👕' },
+  red: { name: 'Ruby Overalls 🔴', cost: 100, color: 0xd81b60, pantsColor: 0x880e4f, hatColor: 0xff8a65, emoji: '🔴' },
+  green: { name: 'Emerald Gardener 🟢', cost: 150, color: 0x43a047, pantsColor: 0x1b5e20, hatColor: 0x81c784, emoji: '🟢' },
+  gold: { name: 'Royal Golden Outfit 🟡', cost: 300, color: 0xffb300, pantsColor: 0xff6f00, hatColor: 0xffe082, emoji: '🟡' },
+  dark: { name: 'Midnight Ranger Coat ⚫', cost: 200, color: 0x212121, pantsColor: 0x000000, hatColor: 0x757575, emoji: '⚫' }
 };
 
 // Active quiz tracking
@@ -272,7 +291,10 @@ function getNewUserState(username, pin) {
       monthlyCompleted: false,
       streakShields: 0,
       weaknesses: {}
-    }
+    },
+    decorations: [],
+    ownedOutfits: ['default'],
+    activeOutfit: 'default'
   };
 }
 
@@ -365,6 +387,10 @@ function migrateUserState(userState) {
       }
     }
   }
+
+  if (!userState.decorations) userState.decorations = [];
+  if (!userState.ownedOutfits) userState.ownedOutfits = ['default'];
+  if (!userState.activeOutfit) userState.activeOutfit = 'default';
 
   return userState;
 }
@@ -755,6 +781,35 @@ function setupEventListeners() {
       evaluatePostTest();
     }
   });
+
+  // Market Shop Category tab click listeners
+  const tabSeedsBtn = document.getElementById('btn-shop-seeds');
+  const tabDecorBtn = document.getElementById('btn-shop-decor');
+  const tabClothesBtn = document.getElementById('btn-shop-clothes');
+
+  if (tabSeedsBtn && tabDecorBtn && tabClothesBtn) {
+    const setShopTab = tab => {
+      activeShopTab = tab;
+      [tabSeedsBtn, tabDecorBtn, tabClothesBtn].forEach(btn => {
+        if (btn) {
+          btn.classList.remove('active');
+          btn.style.background = '#a1887f';
+        }
+      });
+      
+      const activeBtn = tab === 'seeds' ? tabSeedsBtn : tab === 'decor' ? tabDecorBtn : tabClothesBtn;
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.style.background = '#8d6e63';
+      }
+      
+      renderMarket();
+    };
+    
+    tabSeedsBtn.addEventListener('click', () => setShopTab('seeds'));
+    tabDecorBtn.addEventListener('click', () => setShopTab('decor'));
+    tabClothesBtn.addEventListener('click', () => setShopTab('clothes'));
+  }
 }
 
 // Formatting Helper for Duration
@@ -819,6 +874,7 @@ function renderAll() {
   renderQuests();
   renderFamilyPanel();
   updateStudyWidget();
+  renderDecorations3D();
 }
 
 function renderPasture() {
@@ -853,7 +909,7 @@ function renderInventory() {
         <span class="seed-icon">${crop.emoji}</span>
         <div>
           <div class="seed-name">${crop.name}</div>
-          <div class="seed-time">⏱️ ${crop.growTime}s</div>
+          <div class="seed-time">⏱️ ${crop.simulatedGrowTime}</div>
         </div>
       </div>
       <div class="seed-count">${state.inventory[seedKey]}</div>
@@ -928,156 +984,245 @@ function renderHarvestStock() {
 function renderMarket() {
   els.marketItemsGrid.innerHTML = '';
 
-  // Seeds sale
-  Object.keys(cropMeta).forEach(seedKey => {
-    const crop = cropMeta[seedKey];
-    const card = document.createElement('div');
-    card.className = 'market-card';
-    card.innerHTML = `
-      <span class="market-badge">Seed</span>
-      <div class="market-item-icon">${crop.emoji}</div>
-      <div class="market-item-name">${crop.name}</div>
-      <div class="market-item-desc">Grow time: ${crop.growTime}s. Sells for 🪙${crop.sellPrice}.</div>
-      <div class="market-item-price">🪙 ${crop.seedCost}</div>
-      <button class="market-buy-btn" data-seed="${seedKey}">Buy Seed Pack</button>
+  if (activeShopTab === 'seeds') {
+    // Seeds sale
+    Object.keys(cropMeta).forEach(seedKey => {
+      const crop = cropMeta[seedKey];
+      const card = document.createElement('div');
+      card.className = 'market-card';
+      card.innerHTML = `
+        <span class="market-badge">Seed</span>
+        <div class="market-item-icon">${crop.emoji}</div>
+        <div class="market-item-name">${crop.name}</div>
+        <div class="market-item-desc">Grow time: ${crop.simulatedGrowTime}. Sells for 🪙${crop.sellPrice}.</div>
+        <div class="market-item-price">🪙 ${crop.seedCost}</div>
+        <button class="market-buy-btn" data-seed="${seedKey}">Buy Seed Pack</button>
+      `;
+
+      const buyBtn = card.querySelector('.market-buy-btn');
+      if (state.coins < crop.seedCost) buyBtn.disabled = true;
+
+      buyBtn.addEventListener('click', () => buySeeds(seedKey, crop.seedCost));
+      els.marketItemsGrid.appendChild(card);
+    });
+
+    // Animals sale
+    Object.keys(state.animals).forEach(animalKey => {
+      const animal = state.animals[animalKey];
+      const card = document.createElement('div');
+      card.className = 'market-card';
+      
+      let productText = '';
+      if (animal.product === 'egg') productText = '🥚 Eggs';
+      else if (animal.product === 'milk') productText = '🥛 Milk';
+      else if (animal.product === 'bacon') productText = '🥓 Bacon';
+      else if (animal.product === 'wool') productText = '🧶 Wool';
+      
+      const isEnglish = (animalKey === 'chicken' || animalKey === 'sheep');
+      const challengeText = isEnglish ? 'English spelling' : 'Math';
+
+      const activeCount = animal.instances ? animal.instances.length : 0;
+      const isMax = activeCount >= 3;
+
+      card.innerHTML = `
+        <span class="market-badge" style="background:#ea4c89;">Livestock</span>
+        <div class="market-item-icon">${animal.emoji}</div>
+        <div class="market-item-name">${animal.name}</div>
+        <div class="market-item-desc">
+          Gives ${productText} (🪙${animal.productPrice} ea) when playing ${challengeText} quizzes!
+          <br><strong style="color:var(--text-dark);">Active: ${activeCount}/3</strong>
+        </div>
+        <div class="market-item-price">🪙 ${animal.cost}</div>
+        <button class="market-buy-btn" data-animal="${animalKey}" ${isMax ? 'disabled' : ''}>
+          ${activeCount === 0 ? 'Adopt Animal' : (isMax ? 'Max Limit (3/3)' : 'Adopt Another')}
+        </button>
+      `;
+
+      const buyBtn = card.querySelector('.market-buy-btn');
+      if (!isMax && state.coins < animal.cost) buyBtn.disabled = true;
+
+      buyBtn.addEventListener('click', () => {
+        if (state.coins >= animal.cost) {
+          state.coins -= animal.cost;
+          animal.unlocked = true;
+          if (!animal.instances) animal.instances = [];
+          const newId = animalKey + "_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+          animal.instances.push({ id: newId, age: 0, fedCount: 0 });
+          animal.count = animal.instances.length;
+          
+          usersDB[currentUser] = state;
+          saveUsersDB();
+          renderAll();
+          sync3DAnimals();
+          AudioEngine.playSFX('correct');
+          alert(`Congratulations! You adopted a baby ${animal.name}! (ยินดีด้วย! คุณได้รับเลี้ยงลูกสัตว์ใหม่แล้ว)`);
+        } else {
+          AudioEngine.playSFX('incorrect');
+          alert("Not enough coins! (เหรียญทองไม่เพียงพอ)");
+        }
+      });
+      els.marketItemsGrid.appendChild(card);
+    });
+
+    // Gifts & Marriage Items in Market
+    // Gift box
+    const giftCard = document.createElement('div');
+    giftCard.className = 'market-card';
+    giftCard.innerHTML = `
+      <span class="market-badge" style="background:#ab47bc; color:white;">Romance</span>
+      <div class="market-item-icon">🎁</div>
+      <div class="market-item-name">Gift Box (กล่องของขวัญ)</div>
+      <div class="market-item-desc">Give to your partner in the Family tab to increase romance points by +15.</div>
+      <div class="market-item-price">🪙 20</div>
+      <button class="market-buy-btn" id="market-buy-gift-btn">Buy & Send Gift</button>
     `;
+    const buyGiftBtn = giftCard.querySelector('#market-buy-gift-btn');
+    if (state.coins < 20 || !state.family.partnerName) buyGiftBtn.disabled = true;
+    buyGiftBtn.addEventListener('click', () => {
+      giveGiftToPartner();
+    });
+    els.marketItemsGrid.appendChild(giftCard);
 
-    const buyBtn = card.querySelector('.market-buy-btn');
-    if (state.coins < crop.seedCost) buyBtn.disabled = true;
+    // Wedding Ring
+    const ringCard = document.createElement('div');
+    ringCard.className = 'market-card';
+    ringCard.innerHTML = `
+      <span class="market-badge" style="background:#ff5252; color:white;">Marriage</span>
+      <div class="market-item-icon">💍</div>
+      <div class="market-item-name">Wedding Ring (แหวนแต่งงาน)</div>
+      <div class="market-item-desc">Propose marriage to your beloved partner. Requires 100 Romance Points!</div>
+      <div class="market-item-price">🪙 500</div>
+      <button class="market-buy-btn" id="market-buy-ring-btn">Buy & Propose</button>
+    `;
+    const buyRingBtn = ringCard.querySelector('#market-buy-ring-btn');
+    if (state.coins < 500 || !state.family.partnerName || state.family.partnerRomance < 100 || state.family.isMarried) buyRingBtn.disabled = true;
+    buyRingBtn.addEventListener('click', () => {
+      proposeMarriage();
+    });
+    els.marketItemsGrid.appendChild(ringCard);
 
-    buyBtn.addEventListener('click', () => buySeeds(seedKey, crop.seedCost));
-    els.marketItemsGrid.appendChild(card);
-  });
-
-  // Animals sale
-  Object.keys(state.animals).forEach(animalKey => {
-    const animal = state.animals[animalKey];
-    const card = document.createElement('div');
-    card.className = 'market-card';
-    
-    let productText = '';
-    if (animal.product === 'egg') productText = '🥚 Eggs';
-    else if (animal.product === 'milk') productText = '🥛 Milk';
-    else if (animal.product === 'bacon') productText = '🥓 Bacon';
-    else if (animal.product === 'wool') productText = '🧶 Wool';
-    
-    const isEnglish = (animalKey === 'chicken' || animalKey === 'sheep');
-    const challengeText = isEnglish ? 'English spelling' : 'Math';
-
-    const activeCount = animal.instances ? animal.instances.length : 0;
-    const isMax = activeCount >= 3;
-
-    card.innerHTML = `
-      <span class="market-badge" style="background:#ea4c89;">Livestock</span>
-      <div class="market-item-icon">${animal.emoji}</div>
-      <div class="market-item-name">${animal.name}</div>
+    // Streak Freeze Item
+    const freezeCard = document.createElement('div');
+    freezeCard.className = 'market-card';
+    const shieldsCount = state.quizHistory.streakShields || 0;
+    freezeCard.innerHTML = `
+      <span class="market-badge" style="background:#0288d1; color:white;">Study Protection</span>
+      <div class="market-item-icon">🛡️</div>
+      <div class="market-item-name">Streak Freeze (โล่แช่แข็ง)</div>
       <div class="market-item-desc">
-        Gives ${productText} (🪙${animal.productPrice} ea) when playing ${challengeText} quizzes!
-        <br><strong style="color:var(--text-dark);">Active: ${activeCount}/3</strong>
+        ช่วยป้องกันไม่ให้สถิติวันสะสมการเรียนย้อนกลับเป็น 0 หากคุณข้ามวันทำโจทย์ (มีติดตัวไว้ปลอดภัยกว่า!)
+        <br><strong style="color:var(--text-dark);">Active Shields: ${shieldsCount}</strong>
       </div>
-      <div class="market-item-price">🪙 ${animal.cost}</div>
-      <button class="market-buy-btn" data-animal="${animalKey}" ${isMax ? 'disabled' : ''}>
-        ${activeCount === 0 ? 'Adopt Animal' : (isMax ? 'Max Limit (3/3)' : 'Adopt Another')}
-      </button>
+      <div class="market-item-price">🪙 150</div>
+      <button class="market-buy-btn" id="market-buy-freeze-btn">Buy Streak Freeze</button>
     `;
-
-    const buyBtn = card.querySelector('.market-buy-btn');
-    if (!isMax && state.coins < animal.cost) buyBtn.disabled = true;
-
-    buyBtn.addEventListener('click', () => {
-      // Direct adoption click
-      if (state.coins >= animal.cost) {
-        state.coins -= animal.cost;
-        animal.unlocked = true;
-        if (!animal.instances) animal.instances = [];
-        const newId = animalKey + "_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-        animal.instances.push({ id: newId, age: 0, fedCount: 0 });
-        animal.count = animal.instances.length;
-        
+    const buyFreezeBtn = freezeCard.querySelector('#market-buy-freeze-btn');
+    if (state.coins < 150) buyFreezeBtn.disabled = true;
+    buyFreezeBtn.addEventListener('click', () => {
+      if (state.coins >= 150) {
+        state.coins -= 150;
+        if (!state.quizHistory.streakShields) state.quizHistory.streakShields = 0;
+        state.quizHistory.streakShields++;
         usersDB[currentUser] = state;
         saveUsersDB();
         renderAll();
-        sync3DAnimals();
         AudioEngine.playSFX('correct');
-        alert(`Congratulations! You adopted a baby ${animal.name}! (ยินดีด้วย! คุณได้รับเลี้ยงลูกสัตว์ใหม่แล้ว)`);
+        alert(`🛡️ ซื้อ Streak Freeze สำเร็จ! คุณมีตัวช่วยป้องกันการข้ามวันสะสมคงเหลือ ${state.quizHistory.streakShields} อัน`);
       } else {
         AudioEngine.playSFX('incorrect');
-        alert("Not enough coins! (เหรียญทองไม่เพียงพอ)");
+        alert("เหรียญทองไม่เพียงพอ! (ต้องใช้ 150 เหรียญ)");
       }
     });
-    els.marketItemsGrid.appendChild(card);
-  });
+    els.marketItemsGrid.appendChild(freezeCard);
+  } else if (activeShopTab === 'decor') {
+    // Decorations Sale Tab
+    Object.keys(decorMeta).forEach(decorKey => {
+      const decor = decorMeta[decorKey];
+      const card = document.createElement('div');
+      card.className = 'market-card';
+      card.innerHTML = `
+        <span class="market-badge" style="background:#4caf50;">Decor</span>
+        <div class="market-item-icon">${decor.emoji}</div>
+        <div class="market-item-name">${decor.name}</div>
+        <div class="market-item-desc">
+          ${decor.desc}
+          <br><strong style="color:#2e7d32;">* ซื้อแล้วเลือกวางในบอร์ดด้านบนได้เลย!</strong>
+        </div>
+        <div class="market-item-price">🪙 ${decor.cost}</div>
+        <button class="market-buy-btn" style="background:#4caf50; border-color:#388e3c;">Select to Place</button>
+      `;
 
-  // Gifts & Marriage Items in Market
-  // Gift box
-  const giftCard = document.createElement('div');
-  giftCard.className = 'market-card';
-  giftCard.innerHTML = `
-    <span class="market-badge" style="background:#ab47bc; color:white;">Romance</span>
-    <div class="market-item-icon">🎁</div>
-    <div class="market-item-name">Gift Box (กล่องของขวัญ)</div>
-    <div class="market-item-desc">Give to your partner in the Family tab to increase romance points by +15.</div>
-    <div class="market-item-price">🪙 20</div>
-    <button class="market-buy-btn" id="market-buy-gift-btn">Buy & Send Gift</button>
-  `;
-  const buyGiftBtn = giftCard.querySelector('#market-buy-gift-btn');
-  if (state.coins < 20 || !state.family.partnerName) buyGiftBtn.disabled = true;
-  buyGiftBtn.addEventListener('click', () => {
-    giveGiftToPartner();
-  });
-  els.marketItemsGrid.appendChild(giftCard);
+      const buyBtn = card.querySelector('.market-buy-btn');
+      if (state.coins < decor.cost) buyBtn.disabled = true;
 
-  // Wedding Ring
-  const ringCard = document.createElement('div');
-  ringCard.className = 'market-card';
-  ringCard.innerHTML = `
-    <span class="market-badge" style="background:#ff5252; color:white;">Marriage</span>
-    <div class="market-item-icon">💍</div>
-    <div class="market-item-name">Wedding Ring (แหวนแต่งงาน)</div>
-    <div class="market-item-desc">Propose marriage to your beloved partner. Requires 100 Romance Points!</div>
-    <div class="market-item-price">🪙 500</div>
-    <button class="market-buy-btn" id="market-buy-ring-btn">Buy & Propose</button>
-  `;
-  const buyRingBtn = ringCard.querySelector('#market-buy-ring-btn');
-  if (state.coins < 500 || !state.family.partnerName || state.family.partnerRomance < 100 || state.family.isMarried) buyRingBtn.disabled = true;
-  buyRingBtn.addEventListener('click', () => {
-    proposeMarriage();
-  });
-  els.marketItemsGrid.appendChild(ringCard);
+      buyBtn.addEventListener('click', () => {
+        const select = document.getElementById('decor-brush-select');
+        if (select) {
+          select.value = decorKey;
+          select.dispatchEvent(new Event('change'));
+          const tabFarm = document.getElementById('tab-farm');
+          if (tabFarm) tabFarm.click();
+          alert(`เลือก ${decor.name} แล้ว! โปรดคลิกจุดว่างบนพื้นดินในฟาร์มเพื่อซื้อและวางตกแต่ง 🛠️`);
+        }
+      });
+      els.marketItemsGrid.appendChild(card);
+    });
+  } else if (activeShopTab === 'clothes') {
+    // Clothing Outfit Sale Tab
+    Object.keys(outfitMeta).forEach(outfitKey => {
+      const outfit = outfitMeta[outfitKey];
+      const isOwned = state.ownedOutfits && state.ownedOutfits.includes(outfitKey);
+      const isActive = state.activeOutfit === outfitKey;
 
-  // Streak Freeze Item
-  const freezeCard = document.createElement('div');
-  freezeCard.className = 'market-card';
-  const shieldsCount = state.quizHistory.streakShields || 0;
-  freezeCard.innerHTML = `
-    <span class="market-badge" style="background:#0288d1; color:white;">Study Protection</span>
-    <div class="market-item-icon">🛡️</div>
-    <div class="market-item-name">Streak Freeze (โล่แช่แข็ง)</div>
-    <div class="market-item-desc">
-      ช่วยป้องกันไม่ให้สถิติวันสะสมการเรียนย้อนกลับเป็น 0 หากคุณข้ามวันทำโจทย์ (มีติดตัวไว้ปลอดภัยกว่า!)
-      <br><strong style="color:var(--text-dark);">Active Shields: ${shieldsCount}</strong>
-    </div>
-    <div class="market-item-price">🪙 150</div>
-    <button class="market-buy-btn" id="market-buy-freeze-btn">Buy Streak Freeze</button>
-  `;
-  const buyFreezeBtn = freezeCard.querySelector('#market-buy-freeze-btn');
-  if (state.coins < 150) buyFreezeBtn.disabled = true;
-  buyFreezeBtn.addEventListener('click', () => {
-    if (state.coins >= 150) {
-      state.coins -= 150;
-      if (!state.quizHistory.streakShields) state.quizHistory.streakShields = 0;
-      state.quizHistory.streakShields++;
-      usersDB[currentUser] = state;
-      saveUsersDB();
-      renderAll();
-      AudioEngine.playSFX('correct');
-      alert(`🛡️ ซื้อ Streak Freeze สำเร็จ! คุณมีตัวช่วยป้องกันการข้ามวันสะสมคงเหลือ ${state.quizHistory.streakShields} อัน`);
-    } else {
-      AudioEngine.playSFX('incorrect');
-      alert("เหรียญทองไม่เพียงพอ! (ต้องใช้ 150 เหรียญ)");
-    }
-  });
-  els.marketItemsGrid.appendChild(freezeCard);
+      const card = document.createElement('div');
+      card.className = 'market-card';
+      card.innerHTML = `
+        <span class="market-badge" style="background:#ff9800;">Clothing</span>
+        <div class="market-item-icon">${outfit.emoji}</div>
+        <div class="market-item-name">${outfit.name}</div>
+        <div class="market-item-desc">
+          ชุดเครื่องแต่งกายและหมวกฟางแบบพิเศษสำหรับคนงานชาวสวน 3D ของคุณ
+          <br><strong style="color:#e65100;">${isActive ? 'Equipped (กำลังสวมใส่)' : (isOwned ? 'Owned (เป็นเจ้าของแล้ว)' : 'Cost: 🪙' + outfit.cost)}</strong>
+        </div>
+        <div class="market-item-price">${isOwned ? 'Owned' : '🪙 ' + outfit.cost}</div>
+        <button class="market-buy-btn" style="background:#ff9800; border-color:#f57c00;">
+          ${isActive ? 'Equipped' : (isOwned ? 'Equip Outfit' : 'Buy Outfit')}
+        </button>
+      `;
+
+      const buyBtn = card.querySelector('.market-buy-btn');
+      if (isActive) buyBtn.disabled = true;
+      if (!isOwned && state.coins < outfit.cost) buyBtn.disabled = true;
+
+      buyBtn.addEventListener('click', () => {
+        if (!isOwned) {
+          if (state.coins >= outfit.cost) {
+            state.coins -= outfit.cost;
+            if (!state.ownedOutfits) state.ownedOutfits = ['default'];
+            state.ownedOutfits.push(outfitKey);
+            state.activeOutfit = outfitKey;
+            
+            usersDB[currentUser] = state;
+            saveUsersDB();
+            initFarmerHelper3D();
+            renderAll();
+            AudioEngine.playSFX('correct');
+            alert(`🎉 ซื้อและสวมใส่ชุด ${outfit.name} สำเร็จแล้ว!`);
+          }
+        } else {
+          state.activeOutfit = outfitKey;
+          usersDB[currentUser] = state;
+          saveUsersDB();
+          initFarmerHelper3D();
+          renderAll();
+          AudioEngine.playSFX('correct');
+          alert(`👕 สวมใส่ชุด ${outfit.name} เรียบร้อยแล้ว!`);
+        }
+      });
+      els.marketItemsGrid.appendChild(card);
+    });
+  }
+}
 }
 
 // Unlock plots
@@ -2395,6 +2540,8 @@ let groundMesh;
 let active3DPlots = [];
 let active3DAnimals = [];
 let active3DParticles = [];
+let active3DDecorations = [];
+let activeShopTab = 'seeds';
 let farmerHelper3D = {
   mesh: null,
   state: 'idle', // 'idle', 'walking', 'working'
@@ -2843,11 +2990,14 @@ function initFarmerHelper3D() {
   const farmerGroup = new THREE.Group();
   farmerGroup.position.set(-10, 0, -10);
   
+  const activeOutfitKey = (state && state.activeOutfit) ? state.activeOutfit : 'default';
+  const outfit = outfitMeta[activeOutfitKey] || outfitMeta.default;
+
   const skinMat = new THREE.MeshLambertMaterial({ color: 0xffd54f });
-  const shirtMat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
-  const pantsMat = new THREE.MeshLambertMaterial({ color: 0x5e35b1 });
+  const shirtMat = new THREE.MeshLambertMaterial({ color: outfit.color });
+  const pantsMat = new THREE.MeshLambertMaterial({ color: outfit.pantsColor });
   const bootsMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
-  const hatMat = new THREE.MeshLambertMaterial({ color: 0xffb74d });
+  const hatMat = new THREE.MeshLambertMaterial({ color: outfit.hatColor });
 
   const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.7, 0.35), bootsMat);
   lLeg.name = "lLeg";
@@ -3411,6 +3561,153 @@ function updateWaterDrops3D(dt) {
   });
 }
 
+function renderDecorations3D() {
+  if (!scene || !state) return;
+
+  active3DDecorations.forEach(d => {
+    scene.remove(d.group);
+  });
+  active3DDecorations = [];
+
+  if (!state.decorations) state.decorations = [];
+
+  state.decorations.forEach(decor => {
+    const decorGroup = new THREE.Group();
+    decorGroup.position.set(decor.x, 0, decor.z);
+
+    if (decor.type === 'flower_red' || decor.type === 'flower_sun') {
+      const stem = new THREE.Mesh(
+        new THREE.BoxGeometry(0.15, 0.4, 0.15),
+        new THREE.MeshLambertMaterial({ color: 0x4caf50 })
+      );
+      stem.position.y = 0.2;
+      stem.castShadow = true;
+      decorGroup.add(stem);
+
+      const color = decor.type === 'flower_red' ? 0xe91e63 : 0xffeb3b;
+      const blossom = new THREE.Mesh(
+        new THREE.BoxGeometry(0.45, 0.3, 0.45),
+        new THREE.MeshLambertMaterial({ color: color })
+      );
+      blossom.position.y = 0.55;
+      blossom.castShadow = true;
+      decorGroup.add(blossom);
+    } else if (decor.type === 'tree_pine') {
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2, 0.25, 1.2, 8),
+        new THREE.MeshLambertMaterial({ color: 0x5d4037 })
+      );
+      trunk.position.y = 0.6;
+      trunk.castShadow = true;
+      decorGroup.add(trunk);
+
+      const cone1 = new THREE.Mesh(
+        new THREE.ConeGeometry(1.2, 1.6, 6),
+        new THREE.MeshLambertMaterial({ color: 0x1b5e20 })
+      );
+      cone1.position.y = 1.8;
+      cone1.castShadow = true;
+      decorGroup.add(cone1);
+
+      const cone2 = new THREE.Mesh(
+        new THREE.ConeGeometry(0.8, 1.2, 6),
+        new THREE.MeshLambertMaterial({ color: 0x2e7d32 })
+      );
+      cone2.position.y = 2.6;
+      cone2.castShadow = true;
+      decorGroup.add(cone2);
+    } else if (decor.type === 'tree_cherry') {
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2, 0.25, 1.2, 8),
+        new THREE.MeshLambertMaterial({ color: 0x5d4037 })
+      );
+      trunk.position.y = 0.6;
+      trunk.castShadow = true;
+      decorGroup.add(trunk);
+
+      const cone1 = new THREE.Mesh(
+        new THREE.ConeGeometry(1.2, 1.6, 6),
+        new THREE.MeshLambertMaterial({ color: 0xff80ab })
+      );
+      cone1.position.y = 1.8;
+      cone1.castShadow = true;
+      decorGroup.add(cone1);
+
+      const cone2 = new THREE.Mesh(
+        new THREE.ConeGeometry(0.8, 1.2, 6),
+        new THREE.MeshLambertMaterial({ color: 0xffb2dd })
+      );
+      cone2.position.y = 2.6;
+      cone2.castShadow = true;
+      decorGroup.add(cone2);
+    } else if (decor.type === 'fence_white') {
+      const p1 = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 1.2, 0.12),
+        new THREE.MeshLambertMaterial({ color: 0xf5f5f5 })
+      );
+      p1.position.set(-0.4, 0.6, 0);
+      p1.castShadow = true;
+      decorGroup.add(p1);
+
+      const p2 = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 1.2, 0.12),
+        new THREE.MeshLambertMaterial({ color: 0xf5f5f5 })
+      );
+      p2.position.set(0.4, 0.6, 0);
+      p2.castShadow = true;
+      decorGroup.add(p2);
+
+      const r1 = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.12, 0.05),
+        new THREE.MeshLambertMaterial({ color: 0xf5f5f5 })
+      );
+      r1.position.set(0, 0.9, 0);
+      r1.castShadow = true;
+      decorGroup.add(r1);
+
+      const r2 = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.12, 0.05),
+        new THREE.MeshLambertMaterial({ color: 0xf5f5f5 })
+      );
+      r2.position.set(0, 0.4, 0);
+      r2.castShadow = true;
+      decorGroup.add(r2);
+    } else if (decor.type === 'hay_bale') {
+      const bale = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.7, 1.3),
+        new THREE.MeshLambertMaterial({ color: 0xffd54f })
+      );
+      bale.position.y = 0.35;
+      bale.castShadow = true;
+      bale.receiveShadow = true;
+      decorGroup.add(bale);
+
+      const s1 = new THREE.Mesh(
+        new THREE.BoxGeometry(1.04, 0.74, 0.1),
+        new THREE.MeshLambertMaterial({ color: 0x8d6e63 })
+      );
+      s1.position.set(0, 0.35, 0.3);
+      decorGroup.add(s1);
+
+      const s2 = new THREE.Mesh(
+        new THREE.BoxGeometry(1.04, 0.74, 0.1),
+        new THREE.MeshLambertMaterial({ color: 0x8d6e63 })
+      );
+      s2.position.set(0, 0.35, -0.3);
+      decorGroup.add(s2);
+    }
+
+    decorGroup.traverse(child => {
+      if (child.isMesh) {
+        child.userData = { type: 'decoration', id: decor.id, x: decor.x, z: decor.z };
+      }
+    });
+
+    scene.add(decorGroup);
+    active3DDecorations.push({ id: decor.id, group: decorGroup });
+  });
+}
+
 function sync3DAnimals() {
   if (!scene || !state) return;
 
@@ -3957,8 +4254,12 @@ function setupCanvasEvents() {
     
     const targets = [];
     scene.traverse(child => {
-      if (child.isMesh && child.userData && (child.userData.type === 'plot' || child.userData.type === 'animal')) {
-        targets.push(child);
+      if (child.isMesh) {
+        if (child.userData && (child.userData.type === 'plot' || child.userData.type === 'animal' || child.userData.type === 'decoration')) {
+          targets.push(child);
+        } else if (child === groundMesh) {
+          targets.push(child);
+        }
       }
     });
     
@@ -4012,6 +4313,92 @@ function setupCanvasEvents() {
 
     const hit = getRaycastIntersection(e.clientX, e.clientY);
 
+    const decorSelectEl = document.getElementById('decor-brush-select');
+    const activeBrush = decorSelectEl ? decorSelectEl.value : 'none';
+
+    if (activeBrush !== 'none') {
+      if (hit) {
+        const snapX = Math.round(hit.point.x);
+        const snapZ = Math.round(hit.point.z);
+
+        if (activeBrush === 'remove') {
+          const hitData = hit.object.userData;
+          if (hitData && hitData.type === 'decoration') {
+            const decorId = hitData.id;
+            const decorIndex = state.decorations.findIndex(d => d.id === decorId);
+            if (decorIndex !== -1) {
+              const itemType = state.decorations[decorIndex].type;
+              const meta = decorMeta[itemType];
+              const refund = meta ? Math.floor(meta.cost / 2) : 0;
+              state.coins += refund;
+              state.decorations.splice(decorIndex, 1);
+              
+              usersDB[currentUser] = state;
+              saveUsersDB();
+              renderAll();
+              AudioEngine.playSFX('harvest');
+              alert(`ถอนของตกแต่งเรียบร้อย ได้รับเงินคืน 🪙${refund} เหรียญ!`);
+            }
+          }
+        } else {
+          const meta = decorMeta[activeBrush];
+          if (meta) {
+            if (state.coins < meta.cost) {
+              alert(`เหรียญทองไม่เพียงพอสำหรับซื้อ ${meta.name} (ราคา 🪙${meta.cost} เหรียญ)`);
+              return;
+            }
+
+            if (snapX >= -23 && snapX <= -13 && snapZ >= -23 && snapZ <= -13) {
+              alert("ไม่สามารถวางตรงนี้ได้: ติดบ้านชาวสวน!");
+              return;
+            }
+            if (snapX >= -6 && snapX <= 6 && snapZ >= -28 && snapZ <= -16) {
+              alert("ไม่สามารถวางตรงนี้ได้: ติดโรงนา!");
+              return;
+            }
+            if (snapX >= -10 && snapX <= 14 && snapZ >= -6 && snapZ <= 18) {
+              alert("ไม่สามารถวางตรงนี้ได้: ติดพื้นที่แปลงผัก!");
+              return;
+            }
+            if (snapX >= -25 && snapX <= -4 && snapZ >= -1 && snapZ <= 25) {
+              alert("ไม่สามารถวางตรงนี้ได้: ติดพื้นที่ล้อมคอกสัตว์!");
+              return;
+            }
+            if (snapZ >= 21 && snapZ <= 29) {
+              alert("ไม่สามารถวางตรงนี้ได้: ติดพื้นที่ถนนหลวง!");
+              return;
+            }
+            if (Math.abs(snapX) > 38 || Math.abs(snapZ) > 38) {
+              alert("ไม่สามารถวางตรงนี้ได้: นอกขอบเขตฟาร์ม!");
+              return;
+            }
+
+            const alreadyExists = state.decorations.some(d => d.x === snapX && d.z === snapZ);
+            if (alreadyExists) {
+              alert("ตรงนี้มีของตกแต่งชิ้นอื่นวางอยู่แล้ว!");
+              return;
+            }
+
+            state.coins -= meta.cost;
+            const newDecorId = state.decorations.length > 0 ? Math.max(...state.decorations.map(d => d.id)) + 1 : 0;
+            state.decorations.push({
+              id: newDecorId,
+              type: activeBrush,
+              x: snapX,
+              z: snapZ
+            });
+
+            usersDB[currentUser] = state;
+            saveUsersDB();
+            renderAll();
+            AudioEngine.playSFX('correct');
+            spawnStarEffectParticles(new THREE.Vector3(snapX, 0, snapZ));
+          }
+        }
+      }
+      return;
+    }
+
     if (hit) {
       const data = hit.object.userData;
       if (data.type === 'animal') {
@@ -4061,6 +4448,24 @@ function setupCanvasEvents() {
       }
     }
   });
+
+  // Handle decoration dropdown selection change to toggle OFF/ON badge
+  const decorSelectEl = document.getElementById('decor-brush-select');
+  if (decorSelectEl) {
+    decorSelectEl.addEventListener('change', e => {
+      const activeBrush = e.target.value;
+      const badge = document.getElementById('decor-mode-active-badge');
+      if (badge) {
+        if (activeBrush === 'none') {
+          badge.textContent = 'OFF';
+          badge.style.background = '#795548';
+        } else {
+          badge.textContent = 'ON';
+          badge.style.background = '#4caf50';
+        }
+      }
+    });
+  }
 }
 
 function updateSeasonTime(dt) {

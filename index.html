@@ -180,6 +180,23 @@
           <!-- Isometric Farm Scene -->
           <section class="farm-canvas-card">
             <h2 class="panel-title">🚜 Happy Farm Valley (ฟาร์มไอโซเมตริก 60 FPS)</h2>
+            <!-- Decorate Mode Selector HUD -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #fffdf5; border: 2.5px solid #8d6e63; border-radius: 12px; padding: 8px 12px; margin-bottom: 8px;">
+              <span style="font-weight: bold; color: #5d4037; font-size: 0.9rem;">🛠️ โหมดตกแต่งฟาร์ม (Decorate Mode):</span>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="decor-brush-select" class="form-input" style="padding: 4px 8px; border-radius: 6px; border: 2px solid #8d6e63; font-weight: bold; background: white; font-size: 0.85rem; outline: none; margin: 0;">
+                  <option value="none">-- ปิดโหมดตกแต่ง (None) --</option>
+                  <option value="flower_red">🌹 Red Rose (ซื้อ 🪙20)</option>
+                  <option value="flower_sun">🌻 Sunflower (ซื้อ 🪙35)</option>
+                  <option value="tree_pine">🌲 Pine Tree (ซื้อ 🪙75)</option>
+                  <option value="tree_cherry">🌸 Cherry Tree (ซื้อ 🪙100)</option>
+                  <option value="fence_white">🤍 White Fence (ซื้อ 🪙15)</option>
+                  <option value="hay_bale">🌾 Hay Bale (ซื้อ 🪙25)</option>
+                  <option value="remove">🧹 ถอนของตกแต่ง (ขายคืนครึ่งราคา)</option>
+                </select>
+                <span id="decor-mode-active-badge" style="background: #795548; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; border: 1.5px solid #5d4037;">OFF</span>
+              </div>
+            </div>
             <div class="farm-canvas-container" id="farm-canvas-container">
               <canvas id="farm-canvas"></canvas>
             </div>
@@ -277,8 +294,15 @@
     <!-- 3. Market Panel -->
     <section class="view-panel" id="market-view">
       <div class="market-container">
-        <!-- Market seeds section -->
-        <h2 class="panel-title">🛒 Shop Seeds & Livestock</h2>
+        <h2 class="panel-title" style="text-shadow: 0 2px 0 rgba(0,0,0,0.5);">🛒 ร้านค้าสหกรณ์ฟาร์ม (Farm Coop Market)</h2>
+        
+        <!-- Category Selector tabs -->
+        <div class="shop-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
+          <button class="shop-tab-btn active" id="btn-shop-seeds" style="background: #8d6e63; color: white; border: 3px solid #5d4037; padding: 8px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s;">🌾 Seeds & Animals</button>
+          <button class="shop-tab-btn" id="btn-shop-decor" style="background: #a1887f; color: white; border: 3px solid #5d4037; padding: 8px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s;">🎨 Farm Decor</button>
+          <button class="shop-tab-btn" id="btn-shop-clothes" style="background: #a1887f; color: white; border: 3px solid #5d4037; padding: 8px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s;">👕 Clothing Shop</button>
+        </div>
+
         <div class="market-grid" id="market-items-grid">
           <!-- Market items generated dynamically by JS -->
         </div>
