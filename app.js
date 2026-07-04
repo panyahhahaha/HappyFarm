@@ -1864,36 +1864,66 @@ const AudioEngine = {
     if (this.bgmPlaying) return;
     this.bgmPlaying = true;
     
-    // Old MacDonald Had a Farm (retro synth loop)
-    const notes = [
-      392.00, 392.00, 392.00, 293.66, 329.63, 329.63, 293.66,
-      493.88, 493.88, 440.00, 440.00, 392.00
+    // A beautiful, relaxing and cheerful farm melody (pentatonic G major / E minor)
+    const melody = [
+      { freq: 392.00, dur: 1.0 },  // G4
+      { freq: 440.00, dur: 1.0 },  // A4
+      { freq: 493.88, dur: 2.0 },  // B4
+      { freq: 440.00, dur: 1.0 },  // A4
+      { freq: 392.00, dur: 1.0 },  // G4
+      { freq: 329.63, dur: 2.0 },  // E4
+      
+      { freq: 392.00, dur: 1.0 },  // G4
+      { freq: 440.00, dur: 1.0 },  // A4
+      { freq: 493.88, dur: 1.5 },  // B4
+      { freq: 587.33, dur: 0.5 },  // D5
+      { freq: 440.00, dur: 3.0 },  // A4
+      { freq: 0.0,    dur: 1.0 },  // Rest
+      
+      { freq: 493.88, dur: 1.0 },  // B4
+      { freq: 587.33, dur: 1.0 },  // D5
+      { freq: 659.25, dur: 2.0 },  // E5
+      { freq: 587.33, dur: 1.0 },  // D5
+      { freq: 493.88, dur: 1.0 },  // B4
+      { freq: 392.00, dur: 2.0 },  // G4
+      
+      { freq: 329.63, dur: 1.0 },  // E4
+      { freq: 392.00, dur: 1.0 },  // G4
+      { freq: 440.00, dur: 1.5 },  // A4
+      { freq: 392.00, dur: 0.5 },  // G4
+      { freq: 392.00, dur: 3.0 },  // G4
+      { freq: 0.0,    dur: 1.0 }   // Rest
     ];
+    
     let noteIdx = 0;
-    const tempo = 0.38;
+    const baseBeat = 0.32; // speed of the beats
     
     const playNextBGMNote = () => {
       if (!this.bgmPlaying) return;
       const now = this.ctx.currentTime;
-      const freq = notes[noteIdx];
+      const note = melody[noteIdx];
+      const duration = note.dur * baseBeat;
       
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
+      if (note.freq > 0) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'triangle'; // Soft triangle wave for a woodwind/flute-like soothing sound
+        osc.frequency.setValueAtTime(note.freq, now);
+        
+        gain.gain.setValueAtTime(this.volume * 0.12, now);
+        // smooth exponential decay for an organic, relaxing sound
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.95);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start(now);
+        osc.stop(now + duration * 0.95);
+      }
       
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, now);
-      
-      gain.gain.setValueAtTime(this.volume * 0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + tempo * 0.85);
-      
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      
-      osc.start(now);
-      osc.stop(now + tempo * 0.85);
-      
-      noteIdx = (noteIdx + 1) % notes.length;
-      this.bgmTimeout = setTimeout(playNextBGMNote, tempo * 1000);
+      noteIdx = (noteIdx + 1) % melody.length;
+      this.bgmTimeout = setTimeout(playNextBGMNote, duration * 1000);
     };
     
     playNextBGMNote();
