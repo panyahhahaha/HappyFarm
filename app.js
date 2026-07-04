@@ -263,6 +263,13 @@ function getNewUserState(username, pin) {
       childGrowthProgress: 0, // 0-100
       assignedTask: "idle", // "idle", "auto_water", "auto_harvest"
       farmerAge: 18 // Farmer starting age
+    },
+    quizHistory: {
+      lastQuizDate: "",
+      questionsSolvedToday: 0,
+      challengeDayProgress: 0,
+      answeredCorrectlyIds: [],
+      monthlyCompleted: false
     }
   };
 }
@@ -343,6 +350,16 @@ function migrateUserState(userState) {
     for (const prop in defaultState.family) {
       if (userState.family[prop] === undefined) {
         userState.family[prop] = defaultState.family[prop];
+      }
+    }
+  }
+
+  if (!userState.quizHistory) {
+    userState.quizHistory = defaultState.quizHistory;
+  } else {
+    for (const prop in defaultState.quizHistory) {
+      if (userState.quizHistory[prop] === undefined) {
+        userState.quizHistory[prop] = defaultState.quizHistory[prop];
       }
     }
   }
@@ -611,9 +628,26 @@ function setupEventListeners() {
   });
 
   // Dialog mod-close actions
-  els.modalCloseBtn.addEventListener('click', closeModal);
-  els.successContinueBtn.addEventListener('click', closeModal);
-  els.failContinueBtn.addEventListener('click', closeModal);
+  // Dialog mod-close actions
+  const handleContinueClick = () => {
+    AudioEngine.playSFX('click');
+    if (activeSession) {
+      if (activeSession.currentIndex + 1 < activeSession.questions.length) {
+        loadSessionQuestion(activeSession.currentIndex + 1);
+      } else {
+        finishSession();
+      }
+    } else {
+      closeModal();
+    }
+  };
+  els.successContinueBtn.addEventListener('click', handleContinueClick);
+  els.failContinueBtn.addEventListener('click', handleContinueClick);
+  els.modalCloseBtn.addEventListener('click', () => {
+    activeSession = null;
+    stopQuizTimer();
+    closeModal();
+  });
 
   // Challenge barns triggers
   els.modeMath.addEventListener('click', () => startDirectQuiz('math'));
@@ -781,6 +815,7 @@ function renderAll() {
   renderPasture();
   renderQuests();
   renderFamilyPanel();
+  updateStudyWidget();
 }
 
 function renderPasture() {
@@ -1307,25 +1342,32 @@ function handleAnimalClick(animalKey, instanceId) {
 }
 
 function startDirectQuiz(subject) {
-  const questions = questionsData[state.selectedAgeGroup][subject];
-  const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-
-  activeQuiz = {
-    question: randomQuestion,
-    correctCallback: () => {
-      addCoins(15);
-      addXp(15);
-      
-      usersDB[currentUser] = state;
-      saveUsersDB();
-      renderAll();
-    },
-    incorrectCallback: () => {},
-    rewardCoins: 15,
-    rewardXp: 15
+  const todayStr = new Date().toISOString().split('T')[0];
+  
+  if (state.quizHistory.lastQuizDate !== todayStr) {
+    state.quizHistory.questionsSolvedToday = 0;
+  }
+  
+  if (state.quizHistory.questionsSolvedToday >= 30) {
+    alert("คุณทำโจทย์แบบฝึกหัดครบ 30 ข้อสำหรับวันนี้แล้ว! กลับมาเรียนรู้ใหม่ในวันพรุ่งนี้นะครับ 🦉 (Daily Study Limit Reached!)");
+    return;
+  }
+  
+  const sessionQuestions = window.generateQuestionsForSession(state.selectedAgeGroup, subject, state.quizHistory.answeredCorrectlyIds, 30);
+  
+  if (sessionQuestions.length === 0) {
+    alert("ไม่มีคำถามเหลือสำหรับระดับชั้นนี้แล้วครับ!");
+    return;
+  }
+  
+  activeSession = {
+    questions: sessionQuestions,
+    currentIndex: 0,
+    subject: subject,
+    sessionCorrectCount: 0
   };
-
-  showQuizModal(`Learning Barn: ${subject === 'math' ? 'Mathematics 🧮' : 'English 🔤'}`);
+  
+  loadSessionQuestion(0);
 }
 
 function addXp(amount) {
@@ -1369,6 +1411,7 @@ function showQuizModal(title) {
 }
 
 function handleOptionClick(selectedOpt, btnEl) {
+  stopQuizTimer();
   const q = activeQuiz.question;
   const isCorrect = selectedOpt === q.answer;
 
@@ -1420,6 +1463,234 @@ function closeModal() {
   stopSpeaking();
   els.quizModal.classList.remove('active');
 }
+
+// ==========================================
+// 30-Question Daily Exercise Session & Timers
+// ==========================================
+let activeSession = null;
+let quizTimer = {
+  intervalId: null,
+  timeLeft: 30,
+  isActive: false
+};
+
+function loadSessionQuestion(idx) {
+  if (!activeSession) return;
+  activeSession.currentIndex = idx;
+  const q = activeSession.questions[idx];
+  
+  activeQuiz = {
+    question: q,
+    correctCallback: () => {
+      activeSession.sessionCorrectCount++;
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (state.quizHistory.lastQuizDate !== todayStr) {
+        state.quizHistory.lastQuizDate = todayStr;
+        state.quizHistory.questionsSolvedToday = 0;
+      }
+      state.quizHistory.questionsSolvedToday++;
+      
+      if (!state.quizHistory.answeredCorrectlyIds.includes(q.id)) {
+        state.quizHistory.answeredCorrectlyIds.push(q.id);
+      }
+      
+      addCoins(15);
+      addXp(15);
+      
+      usersDB[currentUser] = state;
+      saveUsersDB();
+      renderAll();
+      updateStudyWidget();
+    },
+    incorrectCallback: () => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (state.quizHistory.lastQuizDate !== todayStr) {
+        state.quizHistory.lastQuizDate = todayStr;
+        state.quizHistory.questionsSolvedToday = 0;
+      }
+      state.quizHistory.questionsSolvedToday++;
+      
+      usersDB[currentUser] = state;
+      saveUsersDB();
+      renderAll();
+      updateStudyWidget();
+    },
+    rewardCoins: 15,
+    rewardXp: 15
+  };
+  
+  els.modalQuizContent.classList.add('active');
+  els.feedbackSuccess.classList.remove('active');
+  els.feedbackFail.classList.remove('active');
+  
+  stopQuizTimer();
+  
+  // Show modal with session progress
+  showQuizModal(`Challenge: Q${idx + 1}/30`);
+  
+  if (state.selectedAgeGroup !== 'level-kg') {
+    startQuizTimer();
+  } else {
+    const tContainer = document.getElementById('quiz-timer-container');
+    const tText = document.getElementById('quiz-timer-text');
+    if (tContainer) tContainer.style.display = 'none';
+    if (tText) tText.style.display = 'none';
+  }
+}
+
+function finishSession() {
+  stopQuizTimer();
+  
+  const todayStr = new Date().toISOString().split('T')[0];
+  let message = "";
+  
+  if (state.quizHistory.questionsSolvedToday >= 30) {
+    if (state.quizHistory.lastQuizDate !== todayStr) {
+      state.quizHistory.lastQuizDate = todayStr;
+      state.quizHistory.challengeDayProgress++;
+      
+      if (state.quizHistory.challengeDayProgress >= 30 && !state.quizHistory.monthlyCompleted) {
+        state.quizHistory.monthlyCompleted = true;
+        state.coins += 500;
+        state.xp += 500;
+        if (!state.badges.includes('monthly_mastermind')) {
+          state.badges.push('monthly_mastermind');
+        }
+        message = "\n\n🎉 ยินดีด้วยอย่างยิ่ง! คุณผ่านความท้าทายเรียนรู้วันละ 30 ข้อครบ 1 เดือน (30 วัน) แล้ว! ได้รับเหรียญโบนัส +500 Coins และ +500 XP พร้อมตราเกียรติยศสูงสุด 'Monthly Mastermind 🌟🏆'!";
+      }
+    } else {
+      // Just record challenge day if day limit solved is reached today
+      state.quizHistory.challengeDayProgress++;
+      if (state.quizHistory.challengeDayProgress >= 30 && !state.quizHistory.monthlyCompleted) {
+        state.quizHistory.monthlyCompleted = true;
+        state.coins += 500;
+        state.xp += 500;
+        if (!state.badges.includes('monthly_mastermind')) {
+          state.badges.push('monthly_mastermind');
+        }
+        message = "\n\n🎉 ยินดีด้วยอย่างยิ่ง! คุณผ่านความท้าทายเรียนรู้วันละ 30 ข้อครบ 1 เดือน (30 วัน) แล้ว! ได้รับเหรียญโบนัส +500 Coins และ +500 XP พร้อมตราเกียรติยศสูงสุด 'Monthly Mastermind 🌟🏆'!";
+      }
+    }
+  }
+  
+  alert(`🏆 แบบฝึกหัดสำเร็จ!\nคุณตอบถูก ${activeSession.sessionCorrectCount} จาก 30 ข้อ\nสะสมทำภารกิจสำเร็จ: วันที่ ${state.quizHistory.challengeDayProgress} / 30 วัน${message}`);
+  
+  activeSession = null;
+  closeModal();
+  updateStudyWidget();
+}
+
+function startQuizTimer() {
+  stopQuizTimer();
+  
+  quizTimer.timeLeft = 30;
+  quizTimer.isActive = true;
+  
+  const container = document.getElementById('quiz-timer-container');
+  const bar = document.getElementById('quiz-timer-bar');
+  const text = document.getElementById('quiz-timer-text');
+  
+  if (container && bar && text) {
+    container.style.display = 'block';
+    text.style.display = 'block';
+    bar.style.width = '100%';
+    text.textContent = `เวลาที่เหลือ: 30 วินาที`;
+    text.classList.remove('timer-pulse');
+  }
+  
+  quizTimer.intervalId = setInterval(() => {
+    if (!quizTimer.isActive) {
+      stopQuizTimer();
+      return;
+    }
+    
+    quizTimer.timeLeft--;
+    
+    if (bar) {
+      const pct = (quizTimer.timeLeft / 30) * 100;
+      bar.style.width = `${pct}%`;
+    }
+    if (text) {
+      text.textContent = `เวลาที่เหลือ: ${quizTimer.timeLeft} วินาที`;
+      if (quizTimer.timeLeft <= 10) {
+        text.classList.add('timer-pulse');
+      } else {
+        text.classList.remove('timer-pulse');
+      }
+    }
+    
+    if (quizTimer.timeLeft <= 0) {
+      stopQuizTimer();
+      handleQuizTimeout();
+    }
+  }, 1000);
+}
+
+function stopQuizTimer() {
+  quizTimer.isActive = false;
+  if (quizTimer.intervalId) {
+    clearInterval(quizTimer.intervalId);
+    quizTimer.intervalId = null;
+  }
+  const text = document.getElementById('quiz-timer-text');
+  if (text) text.classList.remove('timer-pulse');
+}
+
+function handleQuizTimeout() {
+  AudioEngine.playSFX('incorrect');
+  stopSpeaking();
+  
+  els.modalQuizContent.classList.remove('active');
+  els.feedbackFail.classList.add('active');
+  
+  const q = activeQuiz.question;
+  els.failMsg.innerHTML = `หมดเวลาแล้ว! (Time's Up!)<br>คำตอบที่ถูกต้องคือ: <strong>${q.answer}</strong>`;
+  
+  const explanation = q.explanation || `ข้อนี้เฉลยคำตอบคือ: ${q.answer}`;
+  els.failExplanationText.innerHTML = explanation;
+  
+  activeQuiz.incorrectCallback();
+}
+
+function updateStudyWidget() {
+  if (!state) return;
+  const challengeDayEl = document.getElementById('study-challenge-day');
+  const todayProgressEl = document.getElementById('study-today-progress');
+  const progressBarEl = document.getElementById('study-day-progress-bar');
+  const statusBadgeEl = document.getElementById('study-status-badge');
+  
+  const todayStr = new Date().toISOString().split('T')[0];
+  const solvedToday = state.quizHistory.questionsSolvedToday || 0;
+  const completedDays = state.quizHistory.challengeDayProgress || 0;
+  
+  if (state.quizHistory.lastQuizDate !== todayStr) {
+    if (todayProgressEl) todayProgressEl.textContent = `Today's solved: 0 / 30 questions`;
+    if (statusBadgeEl) {
+      statusBadgeEl.textContent = `📝 Study active`;
+      statusBadgeEl.style.color = `#2e7d32`;
+    }
+  } else {
+    if (todayProgressEl) todayProgressEl.textContent = `Today's solved: ${solvedToday} / 30 questions`;
+    if (statusBadgeEl) {
+      if (solvedToday >= 30) {
+        statusBadgeEl.textContent = `✅ Completed for today!`;
+        statusBadgeEl.style.color = `#ff9800`;
+      } else {
+        statusBadgeEl.textContent = `📝 Study active`;
+        statusBadgeEl.style.color = `#2e7d32`;
+      }
+    }
+  }
+  
+  if (challengeDayEl) challengeDayEl.textContent = `Day ${completedDays} / 30 Completed`;
+  
+  if (progressBarEl) {
+    const dayPct = (completedDays / 30) * 100;
+    progressBarEl.style.width = `${dayPct}%`;
+  }
+}
+
 
 // Owl School Classroom Engine States
 let activeLessonState = {

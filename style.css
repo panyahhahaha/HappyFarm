@@ -1846,4 +1846,21 @@ select.form-input {
   to { transform: scale(1); opacity: 1; }
 }
 
+/* Liquid Energy Timer Bar */
+#quiz-timer-bar {
+  background: linear-gradient(to right, #ff5722, #f44336) !important;
+  box-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
+}
+
+/* Pulsing warning text for low timer */
+.timer-pulse {
+  animation: textPulse 0.5s infinite alternate;
+  display: inline-block;
+}
+
+@keyframes textPulse {
+  from { transform: scale(1); color: #d84315; }
+  to { transform: scale(1.08); color: #ff1744; }
+}
+
 

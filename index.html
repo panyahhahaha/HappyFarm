@@ -219,8 +219,27 @@
     <section class="view-panel" id="barn-view">
       <div class="barn-container" style="margin-bottom: 20px;">
         <h1 class="barn-title">🏫 Welcome to the Learning Barn!</h1>
-        <p class="barn-desc">Choose a subject to solve fun puzzles and earn bonus gold coins to expand your farm!</p>
-        
+        <!-- Daily Study Challenge Progression Calendar -->
+        <div class="daily-progress-widget" style="background: #fffdf5; border: 3px solid #8d6e63; border-bottom: 6px solid #8d6e63; border-radius: 16px; padding: 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 6px 12px rgba(0,0,0,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed #bcaaa4; padding-bottom: 8px;">
+            <h3 style="margin: 0; color: #5d4037; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; text-shadow: none;">📅 30-Day Study Challenge (ทำโจทย์ 30 วัน)</h3>
+            <span id="study-challenge-day" style="background: #ff9800; color: white; padding: 4px 10px; border-radius: 20px; font-weight: 900; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Day 0 / 30 Completed</span>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; color: #795548; font-weight: 700; text-shadow: none;">
+            <span id="study-today-progress">Today's solved: 0 / 30 questions</span>
+            <span id="study-status-badge" style="color: #2e7d32; display: flex; align-items: center; gap: 4px;">📝 Study active</span>
+          </div>
+          
+          <div style="width: 100%; height: 12px; background: #e0e0e0; border-radius: 6px; overflow: hidden; border: 1.5px solid #bcaaa4; box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);">
+            <div id="study-day-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(to right, #4caf50, #8bc34a); transition: width 0.3s ease;"></div>
+          </div>
+          
+          <p style="margin: 0; font-size: 0.8rem; color: #8d6e63; font-style: italic; text-shadow: none;">
+            * กฎการเรียนรู้: ทำแบบฝึกหัดได้สูงสุดวันละ 30 ข้อ สะสมความก้าวหน้าวันละ 30 ข้อครบ 1 เดือน เพื่อพิชิตรางวัลสูงสุด! (ระดับอนุบาลไม่มีการจับเวลา ระดับประถม 1-6 มีเวลาข้อละ 30 วินาที)
+          </p>
+        </div>
+
         <div class="quiz-mode-select">
           <!-- Math Barn -->
           <button class="mode-card" id="mode-math">
@@ -462,6 +481,11 @@
           <div class="quiz-container">
             <div class="quiz-visual" id="question-visual">🍎🍎🍎</div>
             <div class="quiz-question" id="question-text">How many apples?</div>
+            <!-- Active Question Timer -->
+            <div id="quiz-timer-container" style="display:none; width: 100%; height: 8px; background: #d7ccc8; border-radius: 4px; overflow: hidden; margin-top: 10px; border: 1.5px solid #8d6e63;">
+              <div id="quiz-timer-bar" style="height: 100%; width: 100%; background: #ff5722; transition: width 0.1s linear;"></div>
+            </div>
+            <div id="quiz-timer-text" style="display:none; font-weight: 800; font-size: 0.95rem; color: #d84315; margin: 4px 0 10px 0; text-align: right; text-shadow: none;">Time Left: 30s</div>
             <div class="options-grid" id="question-options">
               <!-- Dynamically populated option buttons -->
             </div>

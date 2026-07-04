@@ -433,3 +433,440 @@ window.lessonsData = {
     }
   ]
 };
+
+// ==========================================
+// Dynamic Question Generator & Difficulty Ordering
+// ==========================================
+window.generateQuestionsForSession = function(gradeKey, subject, answeredCorrectlyIds, count) {
+  let staticPool = [];
+  if (window.questionsData[gradeKey] && window.questionsData[gradeKey][subject]) {
+    staticPool = window.questionsData[gradeKey][subject];
+  }
+  
+  // Filter out questions that have already been answered correctly
+  let availableQuestions = staticPool.filter(q => !answeredCorrectlyIds.includes(q.id));
+  let selected = [...availableQuestions];
+  
+  // If we don't have enough static questions, dynamically generate
+  const targetCount = count || 30;
+  let genIndex = 1;
+  
+  while (selected.length < targetCount) {
+    const newQ = generateSingleDynamicQuestion(gradeKey, subject, genIndex, answeredCorrectlyIds);
+    if (!selected.some(q => q.id === newQ.id) && !answeredCorrectlyIds.includes(newQ.id)) {
+      selected.push(newQ);
+    }
+    genIndex++;
+    if (genIndex > 150) break; // Safety brake
+  }
+  
+  // Slice to desired count
+  selected = selected.slice(0, targetCount);
+  
+  // Sort by difficulty (ascending)
+  selected.sort((a, b) => getQuestionDifficultyWeight(a) - getQuestionDifficultyWeight(b));
+  
+  return selected;
+};
+
+function generateSingleDynamicQuestion(gradeKey, subject, seed, answeredCorrectlyIds) {
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+  
+  const uniqueId = `dyn_${gradeKey}_${subject}_${seed}_${Date.now()}_${rand(100, 999)}`;
+  
+  if (gradeKey === 'level-kg') {
+    if (subject === 'math') {
+      const type = pick(['count', 'shape', 'comparison', 'matching']);
+      if (type === 'count') {
+        const num = rand(1, 10);
+        const emoji = pick(['🍎', '🥕', '🦋', '🦆', '🥚', '🎈', '⭐', '🍭', '🐱', '🐶']);
+        let visualStr = "";
+        for (let i = 0; i < num; i++) visualStr += emoji;
+        const options = shuffle([num.toString(), (num + 1).toString(), Math.max(1, num - 1).toString()]);
+        return {
+          id: uniqueId,
+          type: 'count',
+          question: `Count the items: (นับจำนวนสิ่งของในภาพ)`,
+          visual: `<span style='font-size:3.5rem;'>${visualStr}</span>`,
+          options: options,
+          answer: num.toString(),
+          explanation: `ใช้นิ้วนับทีละชิ้นจนถึงตัวสุดท้ายนะครับ: จะได้ ${num} ชิ้นพอดีครับ!`
+        };
+      } else if (type === 'shape') {
+        const shapeType = pick(['circle', 'square', 'triangle']);
+        const shapesMap = {
+          circle: { name: 'Circle (วงกลม)', emoji: '🔴' },
+          square: { name: 'Square (สี่เหลี่ยม)', emoji: '🟦' },
+          triangle: { name: 'Triangle (สามเหลี่ยม)', emoji: '🔺' }
+        };
+        const target = shapesMap[shapeType];
+        return {
+          id: uniqueId,
+          type: 'shape',
+          question: `Which picture is a ${target.name}? (รูปไหนคือรูปทรงนี้?)`,
+          visual: "<span style='font-size:3.5rem;'>❓</span>",
+          options: shuffle(["<span style='font-size:2rem;'>🔴</span>", "<span style='font-size:2rem;'>🟦</span>", "<span style='font-size:2rem;'>🔺</span>"]),
+          answer: `<span style='font-size:2rem;'>${target.emoji}</span>`,
+          explanation: `รูปทรง ${target.name} ตรงกับภาพ ${target.emoji} นั่นเองครับเด็กๆ!`
+        };
+      } else if (type === 'comparison') {
+        const pair = pick([
+          { big: '🍉 watermelon (แตงโม)', small: '🍓 strawberry (สตรอว์เบอร์รี่)', emoji: '🍉 vs 🍓' },
+          { big: '🦒 giraffe (ยีราฟ)', small: '🐱 cat (แมว)', emoji: '🦒 vs 🐱' },
+          { big: '🐘 elephant (ช้าง)', small: '🐭 mouse (หนู)', emoji: '🐘 vs 🐭' }
+        ]);
+        return {
+          id: uniqueId,
+          type: 'comparison',
+          question: `Which one is BIG? (สิ่งของในภาพใดมีขนาดใหญ่?)`,
+          visual: `<span style='font-size:3.5rem;'>${pair.emoji}</span>`,
+          options: shuffle([pair.big, pair.small]),
+          answer: pair.big,
+          explanation: `${pair.big} มีขนาดใหญ่กว่า ${pair.small} ครับ!`
+        };
+      } else {
+        const match = pick([
+          { item: '🐰 rabbit (กระต่าย)', food: '🥕 carrot (แครอท)', icon: '🐰' },
+          { item: '🐵 monkey (ลิง)', food: '🍌 banana (กล้วย)', icon: '🐵' },
+          { item: '🐮 cow (วัว)', food: '🌾 grass (หญ้า)', icon: '🐮' },
+          { item: '🐟 fish (ปลา)', food: '🌊 water (น้ำ)', icon: '🐟' }
+        ]);
+        return {
+          id: uniqueId,
+          type: 'matching',
+          question: `Match: What goes with the ${match.item}? (จับคู่สิ่งของที่คู่กัน)`,
+          visual: `<span style='font-size:3.5rem;'>${match.icon} ➔ ❓</span>`,
+          options: shuffle([match.food, "🥩 meat (เนื้อสัตว์)", "🪙 coin (เหรียญ)"]),
+          answer: match.food,
+          explanation: `${match.item} ต้องคู่กับ ${match.food} ครับ!`
+        };
+      }
+    } else { // level-kg english
+      const type = pick(['color', 'spelling', 'phonics']);
+      if (type === 'color') {
+        const item = pick([
+          { emoji: '🍓', color: '🔴 Red (สีแดง)' },
+          { emoji: '🍌', color: '🟡 Yellow (สีเหลือง)' },
+          { emoji: '🥦', color: '🟢 Green (สีเขียว)' },
+          { emoji: '🍇', color: '🍇 Purple (สีม่วง)' }
+        ]);
+        return {
+          id: uniqueId,
+          type: 'color',
+          question: `What color is this? (สีของรูปภาพนี้คือสีอะไร?)`,
+          visual: `<span style='font-size:3.5rem;'>${item.emoji}</span>`,
+          options: shuffle(['🔴 Red (สีแดง)', '🟡 Yellow (สีเหลือง)', '🟢 Green (สีเขียว)', '🍇 Purple (สีม่วง)']),
+          answer: item.color,
+          explanation: `ผลไม้นี้คือ ${item.emoji} มีสีตรงกับ ${item.color} ครับ!`
+        };
+      } else if (type === 'spelling') {
+        const item = pick([
+          { word: 'CAT', icon: '🐱 Cat (แมว)' },
+          { word: 'DOG', icon: '🐶 Dog (สุนัข)' },
+          { word: 'PIG', icon: '🐷 Pig (หมู)' },
+          { word: 'HEN', icon: '🐔 Hen (แม่ไก่)' }
+        ]);
+        return {
+          id: uniqueId,
+          type: 'spelling',
+          question: `Match the word with the correct image: (คำที่สะกดนี้ตรงกับรูปใด?)`,
+          visual: `<div style='font-size:1.8rem; font-weight:bold; background:#fff; color:#333; padding:8px 16px; border-radius:8px;'>${item.word}</div>`,
+          options: shuffle(['🐱 Cat (แมว)', '🐶 Dog (สุนัข)', '🐷 Pig (หมู)', '🐔 Hen (แม่ไก่)']),
+          answer: item.icon,
+          explanation: `คำว่า ${item.word} หมายถึง ${item.icon} ครับ!`
+        };
+      } else {
+        const item = pick([
+          { upper: '🅰️', lower: 'a' },
+          { upper: '🅱️', lower: 'b' },
+          { upper: '🅲️', lower: 'c' },
+          { upper: '🅳️', lower: 'd' }
+        ]);
+        return {
+          id: uniqueId,
+          type: 'phonics',
+          question: `Match the capital letter with its lowercase: (จับคู่พิมพ์ใหญ่กับพิมพ์เล็ก)`,
+          visual: `<span style='font-size:3.5rem;'>${item.upper} ➔ ❓</span>`,
+          options: shuffle(['a', 'b', 'c', 'd', 'e']),
+          answer: item.lower,
+          explanation: `ตัวพิมพ์ใหญ่ ${item.upper} จะจับคู่กับตัวพิมพ์เล็กคือ ${item.lower} ครับ!`
+        };
+      }
+    }
+  } else if (gradeKey === 'level-p1') {
+    if (subject === 'math') {
+      const type = pick(['addition', 'subtraction']);
+      if (type === 'addition') {
+        const a = rand(1, 15);
+        const b = rand(1, 5);
+        const ans = a + b;
+        return {
+          id: uniqueId,
+          type: 'addition',
+          question: `Solve the sum: (หาผลรวมเลขต่อไปนี้)`,
+          visual: `<span style='font-size:2.5rem;'>${a} + ${b} = ?</span>`,
+          options: shuffle([ans.toString(), (ans + 1).toString(), (ans - 1).toString()]),
+          answer: ans.toString(),
+          explanation: `ใช้วิธีนำ ${a} ไว้ในใจ แล้วนับนิ้วต่ออีก ${b} ครั้ง ได้ผลรวมคือ ${ans} ครับ!`
+        };
+      } else {
+        const a = rand(5, 20);
+        const b = rand(1, a - 1);
+        const ans = a - b;
+        return {
+          id: uniqueId,
+          type: 'subtraction',
+          question: `Solve: (หาผลลบเลขต่อไปนี้)`,
+          visual: `<span style='font-size:2.5rem;'>${a} - ${b} = ?</span>`,
+          options: shuffle([ans.toString(), (ans + 2).toString(), Math.max(0, ans - 1).toString()]),
+          answer: ans.toString(),
+          explanation: `มีอยู่ ${a} หักออกไป ${b} จะเหลือจำนวนเท่ากับ ${ans} ครับ!`
+        };
+      }
+    } else {
+      const item = pick([
+        { word: 'c_t', ans: 'a', full: 'cat (แมว)' },
+        { word: 'd_g', ans: 'o', full: 'dog (สุนัข)' },
+        { word: 'p_g', ans: 'i', full: 'pig (หมู)' },
+        { word: 'h_n', ans: 'e', full: 'hen (แม่ไก่)' },
+        { word: 'b_x', ans: 'o', full: 'box (กล่อง)' }
+      ]);
+      return {
+        id: uniqueId,
+        type: 'spelling',
+        question: `Fill in the missing letter for: (ใส่ตัวอักษรที่หายไป)`,
+        visual: `<div style='font-size:1.8rem; font-weight:bold; background:#fff; color:#333; padding:8px 16px; border-radius:8px;'>${item.word}</div>`,
+        options: shuffle(['a', 'e', 'i', 'o', 'u']),
+        answer: item.ans,
+        explanation: `คำว่า ${item.full} ตัวอักษรที่ขาดหายไปคือสะกดตัว ${item.ans} ครับ!`
+      };
+    }
+  } else if (gradeKey === 'level-p2') {
+    if (subject === 'math') {
+      const a = rand(15, 85);
+      const b = rand(9, 19);
+      const ans = a + b;
+      return {
+        id: uniqueId,
+        type: 'addition',
+        question: `Solve with regrouping: (หาผลรวมแบบมีการทด)`,
+        visual: `<span style='font-size:2.5rem;'>${a} + ${b} = ?</span>`,
+        options: shuffle([ans.toString(), (ans + 10).toString(), (ans - 1).toString()]),
+        answer: ans.toString(),
+        explanation: `บวกหลักหน่วยก่อน: ${a % 10} + ${b % 10} = ${(a%10)+(b%10)} ทด 1 ไปบวกหลักสิบ ➔ ผลลัพธ์รวมคือ ${ans} ครับ!`
+      };
+    } else {
+      const item = pick([
+        { q: "______ is playing with the ball. (แมวตัวหนึ่งกำลังเล่นบอล)", visual: "🐱 playing", options: ["It", "He", "She"], ans: "It" },
+        { q: "______ are farming together. (ชาวไร่หลายคนกำลังทำฟาร์ม)", visual: "👨‍🌾👩‍🌾 farming", options: ["They", "We", "He"], ans: "They" },
+        { q: "______ is watering the crops. (สมชายกำลังรดน้ำผัก)", visual: "👦 watering", options: ["He", "She", "It"], ans: "He" }
+      ]);
+      return {
+        id: uniqueId,
+        type: 'grammar',
+        question: item.q,
+        visual: item.visual,
+        options: item.options,
+        answer: item.ans,
+        explanation: `สรรพนามแทนคำนามในข้อนี้ใช้คำว่า ${item.ans} เพื่อให้ประโยคสมบูรณ์ครับ!`
+      };
+    }
+  } else if (gradeKey === 'level-p3') {
+    if (subject === 'math') {
+      const type = pick(['multiplication', 'division']);
+      if (type === 'multiplication') {
+        const a = rand(3, 9);
+        const b = rand(3, 9);
+        const ans = a * b;
+        return {
+          id: uniqueId,
+          type: 'multiplication',
+          question: `Multiply: (หาผลคูณเลขต่อไปนี้)`,
+          visual: `<span style='font-size:2.5rem;'>${a} x ${b} = ?</span>`,
+          options: shuffle([ans.toString(), (ans + a).toString(), (ans - b).toString()]),
+          answer: ans.toString(),
+          explanation: `ผลลัพธ์ของ ${a} คูณ ${b} (หรือบวกตัวมันเองไป ${b} ครั้ง) มีค่าเท่ากับ ${ans} ครับ!`
+        };
+      } else {
+        const b = rand(3, 9);
+        const ans = rand(3, 9);
+        const a = b * ans;
+        return {
+          id: uniqueId,
+          type: 'division',
+          question: `Divide: (หาผลหารเลขต่อไปนี้)`,
+          visual: `<span style='font-size:2.5rem;'>${a} / ${b} = ?</span>`,
+          options: shuffle([ans.toString(), (ans + 1).toString(), (ans - 1).toString()]),
+          answer: ans.toString(),
+          explanation: `เนื่องจาก ${b} x ${ans} = ${a} ดังนั้นผลหารของ ${a} / ${b} จึงเท่ากับ ${ans} ครับ!`
+        };
+      }
+    } else {
+      const item = pick([
+        { q: "Which tool is used to water the soil?", visual: "💧 Soil", options: ["Watering Can (บัวรดน้ำ)", "Axe (ขวาน)", "Hammer (ค้อน)"], ans: "Watering Can (บัวรดน้ำ)" },
+        { q: "Which animal produces MILK?", visual: "🥛 Milk", options: ["Cow (วัว)", "Chicken (ไก่)", "Pig (หมู)"], ans: "Cow (วัว)" },
+        { q: "Which animal has WOOL?", visual: "🧶 Wool", options: ["Sheep (แกะ)", "Pig (หมู)", "Dog (สุนัข)"], ans: "Sheep (แกะ)" }
+      ]);
+      return {
+        id: uniqueId,
+        type: 'vocabulary',
+        question: item.q,
+        visual: item.visual,
+        options: item.options,
+        answer: item.ans,
+        explanation: `คำตอบคือ ${item.ans} เป็นคำศัพท์ที่ตรงความหมายที่สุดครับ!`
+      };
+    }
+  } else if (gradeKey === 'level-p4') {
+    if (subject === 'math') {
+      const type = pick(['decimals_compare', 'equations']);
+      if (type === 'decimals_compare') {
+        const val = rand(1, 9);
+        const bigger = `0.${val}`;
+        const smaller = `0.0${val}`;
+        return {
+          id: uniqueId,
+          type: 'decimals',
+          question: `Which decimal is LARGER? (ทศนิยมในข้อใดมีค่ามากกว่า?)`,
+          visual: `<span style='font-size:2.5rem;'>${bigger} vs ${smaller}</span>`,
+          options: shuffle([bigger, smaller]),
+          answer: bigger,
+          explanation: `ทศนิยมตำแหน่งที่หนึ่ง ${bigger} มีค่าในหลักส่วนสิบมากกว่าหลักส่วนร้อยของ ${smaller} เสมอครับ!`
+        };
+      } else {
+        const x = rand(5, 20);
+        const b = rand(5, 25);
+        const ans = x + b;
+        return {
+          id: uniqueId,
+          type: 'equation',
+          question: `Solve for x: (จงแก้สมการหาค่า x)`,
+          visual: `<span style='font-size:2.2rem;'>x + ${b} = ${ans}</span>`,
+          options: shuffle([x.toString(), (x + 5).toString(), (x - 2).toString()]),
+          answer: x.toString(),
+          explanation: `ย้าย ${b} ไปลบออกจากฝั่งขวา: x = ${ans} - ${b} จะได้ x = ${x} ครับ!`
+        };
+      }
+    } else {
+      const item = pick([
+        { q: "We watered the crops, ______ they grew quickly.", options: ["so (ดังนั้น)", "but (แต่)", "because (เพราะว่า)"], ans: "so (ดังนั้น)" },
+        { q: "The seeds were small ______ they grew into big plants.", options: ["but (แต่)", "so (ดังนั้น)", "because (เพราะว่า)"], ans: "but (แต่)" }
+      ]);
+      return {
+        id: uniqueId,
+        type: 'conjunction',
+        question: item.q,
+        visual: "🔗 Conjunction",
+        options: item.options,
+        answer: item.ans,
+        explanation: `คำเชื่อมที่เหมาะสมที่สุดเพื่อบ่งชี้ประโยคนี้คือ ${item.ans} ครับ!`
+      };
+    }
+  } else if (gradeKey === 'level-p5') {
+    if (subject === 'math') {
+      const w = rand(2, 5);
+      const l = rand(3, 6);
+      const h = rand(2, 4);
+      const vol = w * l * h;
+      return {
+        id: uniqueId,
+        type: 'volume',
+        question: `Calculate volume of cuboid: (กว้าง ${w}m, ยาว ${l}m, สูง ${h}m)`,
+        visual: `<span style='font-size:2.2rem;'>W=${w}, L=${l}, H=${h}</span>`,
+        options: shuffle([`${vol} cu.m.`, `${vol + 10} cu.m.`, `${vol - 5} cu.m.`]),
+        answer: `${vol} cu.m.`,
+        explanation: `สูตรปริมาตร = กว้าง x ยาว x สูง ➔ ${w} x ${l} x ${h} = ${vol} ลูกบาศก์เมตรครับ!`
+      };
+    } else {
+      const item = pick([
+        { q: "Complete with Passive voice: 'The carrot ______ by the rabbit.'", options: ["is eaten", "eats", "was eating"], ans: "is eaten" },
+        { q: "Complete: 'The seeds ______ planted yesterday.'", options: ["were", "are", "was"], ans: "were" }
+      ]);
+      return {
+        id: uniqueId,
+        type: 'grammar_passive',
+        question: item.q,
+        visual: "🥕 passive",
+        options: item.options,
+        answer: item.ans,
+        explanation: `โครงสร้างประโยคถูกกระทำคือ is/am/are/was/were + V.3 คำตอบจึงเป็น ${item.ans} ครับ!`
+      };
+    }
+  } else { // level-p6
+    if (subject === 'math') {
+      const type = pick(['gcd', 'lcm']);
+      if (type === 'gcd') {
+        const prime = pick([3, 5, 7]);
+        const a = prime * 2;
+        const b = prime * 3;
+        return {
+          id: uniqueId,
+          type: 'gcd',
+          question: `Find the G.C.D (ห.ร.ม.) of ${a} and ${b}:`,
+          visual: `<span style='font-size:2.2rem;'>G.C.D (${a}, ${b})</span>`,
+          options: shuffle([prime.toString(), "2", "3"]),
+          answer: prime.toString(),
+          explanation: `จำนวนเฉพาะตัวร่วมที่หารได้ลงตัวทั้งคู่และใหญ่ที่สุดคือ ${prime} ครับ!`
+        };
+      } else {
+        const a = pick([4, 6, 8]);
+        const b = pick([3, 5]);
+        const lcm = a * b;
+        return {
+          id: uniqueId,
+          type: 'lcm',
+          question: `Find the L.C.M (ค.ร.น.) of ${a} and ${b}:`,
+          visual: `<span style='font-size:2.2rem;'>L.C.M (${a}, ${b})</span>`,
+          options: shuffle([lcm.toString(), (lcm * 2).toString(), (lcm - a).toString()]),
+          answer: lcm.toString(),
+          explanation: `ตัวคูณร่วมที่น้อยที่สุดที่เลขทั้งคู่ไปหารได้ลงตัวคือ ${lcm} ครับ!`
+        };
+      }
+    } else {
+      const item = pick([
+        { q: "What does the idiom 'Piece of cake' mean?", options: ["A very easy task (งานที่ง่ายมาก)", "A delicious food", "A hard project"], ans: "A very easy task (งานที่ง่ายมาก)" },
+        { q: "What does the idiom 'Under the weather' mean?", options: ["Feeling sick (รู้สึกไม่สบาย)", "Raining heavily", "Hot outside"], ans: "Feeling sick (รู้สึกไม่สบาย)" }
+      ]);
+      return {
+        id: uniqueId,
+        type: 'idiom',
+        question: item.q,
+        visual: "🍰 idiom",
+        options: item.options,
+        answer: item.ans,
+        explanation: `สำนวนข้อนี้แปลว่า ${item.ans} ครับ!`
+      };
+    }
+  }
+}
+
+function getQuestionDifficultyWeight(q) {
+  const typeWeights = {
+    count: 1,
+    number: 1.5,
+    shape: 2,
+    comparison: 3,
+    matching: 3.5,
+    alphabet: 1,
+    phonics: 2,
+    color: 3,
+    vocabulary: 4,
+    spelling: 5,
+    addition: 6,
+    subtraction: 7,
+    multiplication: 8,
+    division: 8.5,
+    grammar: 7,
+    conjunction: 7.5,
+    decimals: 9,
+    volume: 10,
+    equation: 10,
+    gcd: 10,
+    lcm: 10,
+    grammar_passive: 9,
+    idiom: 9.5
+  };
+  return typeWeights[q.type] || 5;
+}
