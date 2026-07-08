@@ -3187,29 +3187,122 @@ function build3DWorld() {
 
   scene.add(boardGroup);
 
-  // Delivery Truck (Z: 25, default X: -3)
+  // Delivery Carriage & Horse (Z: 25, default X: -3)
   truck3DMesh = new THREE.Group();
   truck3DMesh.position.set(-3, 0, 25);
   
-  const cab = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.0, 2.2), new THREE.MeshLambertMaterial({ color: 0x1e88e5 }));
-  cab.position.set(1.25, 1.4, 0);
-  cab.castShadow = true;
-  truck3DMesh.add(cab);
+  // 1. CARRIAGE BODY (เกวียนไม้)
+  const cartBase = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.4, 2.2), new THREE.MeshStandardMaterial({ color: 0x8d6e63 }));
+  cartBase.position.set(-1.0, 0.8, 0);
+  cartBase.castShadow = true;
+  cartBase.receiveShadow = true;
+  truck3DMesh.add(cartBase);
+  
+  // Carriage Sides (รั้วไม้รอบเกวียน)
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+  const backWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.2, 2.2), wallMat);
+  backWall.position.set(-2.65, 1.4, 0);
+  backWall.castShadow = true;
+  truck3DMesh.add(backWall);
+  
+  const sideWallL = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 0.2), wallMat);
+  sideWallL.position.set(-1.0, 1.4, 1.0);
+  sideWallL.castShadow = true;
+  truck3DMesh.add(sideWallL);
+  
+  const sideWallR = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 0.2), wallMat);
+  sideWallR.position.set(-1.0, 1.4, -1.0);
+  sideWallR.castShadow = true;
+  truck3DMesh.add(sideWallR);
 
-  const bed = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.8, 2.2), new THREE.MeshLambertMaterial({ color: 0xf5f5f5 }));
-  bed.position.set(-1.5, 1.3, 0);
-  bed.castShadow = true;
-  truck3DMesh.add(bed);
-
-  const wheelGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.5, 12);
+  // Hay block inside cart (สินค้าที่บรรทุก)
+  const hay = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.0, 1.6), new THREE.MeshStandardMaterial({ color: 0xffeb3b }));
+  hay.position.set(-1.0, 1.3, 0);
+  hay.castShadow = true;
+  truck3DMesh.add(hay);
+  
+  // Carriage Wheels (ล้อเกวียนไม้ขนาดใหญ่)
+  const wheelGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.25, 12);
   wheelGeo.rotateX(Math.PI / 2);
-  const wheelMat = new THREE.MeshLambertMaterial({ color: 0x212121 });
+  const wheelMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
+  
+  const w1 = new THREE.Mesh(wheelGeo, wheelMat); w1.position.set(-2.2, 0.8, 1.15); w1.castShadow = true; truck3DMesh.add(w1);
+  const w2 = new THREE.Mesh(wheelGeo, wheelMat); w2.position.set(-2.2, 0.8, -1.15); w2.castShadow = true; truck3DMesh.add(w2);
+  const w3 = new THREE.Mesh(wheelGeo, wheelMat); w3.position.set(0.2, 0.8, 1.15); w3.castShadow = true; truck3DMesh.add(w3);
+  const w4 = new THREE.Mesh(wheelGeo, wheelMat); w4.position.set(0.2, 0.8, -1.15); w4.castShadow = true; truck3DMesh.add(w4);
 
-  const w1 = new THREE.Mesh(wheelGeo, wheelMat); w1.position.set(-1.8, 0.6, 1.15); w1.castShadow = true; truck3DMesh.add(w1);
-  const w2 = new THREE.Mesh(wheelGeo, wheelMat); w2.position.set(-1.8, 0.6, -1.15); w2.castShadow = true; truck3DMesh.add(w2);
-  const w3 = new THREE.Mesh(wheelGeo, wheelMat); w3.position.set(1.0, 0.6, 1.15); w3.castShadow = true; truck3DMesh.add(w3);
-  const w4 = new THREE.Mesh(wheelGeo, wheelMat); w4.position.set(1.0, 0.6, -1.15); w4.castShadow = true; truck3DMesh.add(w4);
+  // 2. CONNECTING POLES (คานลากไม้)
+  const poleL = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.15), wallMat);
+  poleL.position.set(1.4, 0.8, 0.6);
+  truck3DMesh.add(poleL);
+  
+  const poleR = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.15), wallMat);
+  poleR.position.set(1.4, 0.8, -0.6);
+  truck3DMesh.add(poleR);
 
+  // 3. THE HORSE (ตัวม้าลากเกวียน)
+  const horseGroup = new THREE.Group();
+  horseGroup.position.set(2.8, 0, 0);
+  
+  const horseBody = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.1, 0.8), new THREE.MeshStandardMaterial({ color: 0x795548 })); // brown horse
+  horseBody.position.y = 1.35;
+  horseBody.castShadow = true;
+  horseGroup.add(horseBody);
+  
+  // Head & Neck
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.0, 0.6), new THREE.MeshStandardMaterial({ color: 0x795548 }));
+  neck.position.set(0.7, 1.9, 0);
+  neck.rotation.z = -0.4;
+  neck.castShadow = true;
+  horseGroup.add(neck);
+  
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.58), new THREE.MeshStandardMaterial({ color: 0x795548 }));
+  head.position.set(1.0, 2.3, 0);
+  head.castShadow = true;
+  horseGroup.add(head);
+
+  // Mane
+  const mane = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.9, 0.2), new THREE.MeshStandardMaterial({ color: 0x3e2723 }));
+  mane.position.set(0.45, 1.95, 0);
+  horseGroup.add(mane);
+
+  // Ears
+  const earL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.15), new THREE.MeshStandardMaterial({ color: 0x795548 }));
+  earL.position.set(0.8, 2.6, 0.2);
+  horseGroup.add(earL);
+  
+  const earR = new THREE.Mesh(earL.geometry, earL.material);
+  earR.position.set(0.8, 2.6, -0.2);
+  horseGroup.add(earR);
+
+  // Tail
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.0, 0.25), new THREE.MeshStandardMaterial({ color: 0x3e2723 }));
+  tail.position.set(-1.1, 1.3, 0);
+  tail.rotation.z = 0.2;
+  horseGroup.add(tail);
+
+  // Legs
+  const legGeo = new THREE.BoxGeometry(0.25, 0.8, 0.25);
+  const hoofMat = new THREE.MeshStandardMaterial({ color: 0x212121 });
+  
+  const createHorseLeg = (lx, lz) => {
+    const leg = new THREE.Mesh(legGeo, horseBody.material);
+    leg.position.set(lx, 0.4, lz);
+    leg.castShadow = true;
+    
+    const hoof = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.15, 0.28), hoofMat);
+    hoof.position.y = -0.4;
+    leg.add(hoof);
+    return leg;
+  };
+  
+  horseGroup.add(createHorseLeg(-0.7, 0.3));
+  horseGroup.add(createHorseLeg(-0.7, -0.3));
+  horseGroup.add(createHorseLeg(0.7, 0.3));
+  horseGroup.add(createHorseLeg(0.7, -0.3));
+  
+  truck3DMesh.add(horseGroup);
+  
   scene.add(truck3DMesh);
 
   // White Pasture Fences around the animal pen (X: -24 to -5, Z: 0 to 25)
@@ -5084,7 +5177,7 @@ function renderQuests() {
           🪙+${quest.rewardCoins} ⭐+${quest.rewardXp}
         </div>
         <button class="quest-btn" ${(!canDeliver || truckState !== 'idle') ? 'disabled' : ''} onclick="deliverQuest('${quest.id}')">
-          ${truckState !== 'idle' ? '🚚...' : 'Deliver'}
+          ${truckState !== 'idle' ? '🐎...' : 'Deliver'}
         </button>
       </div>
     `;
