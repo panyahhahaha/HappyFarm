@@ -168,6 +168,9 @@
       <button class="tab-btn" id="tab-family" data-target="family-view">
         <span>👨‍👩‍👧‍👦</span> Family
       </button>
+      <button class="tab-btn" id="tab-social" data-target="social-view">
+        <span>👭</span> Social Center
+      </button>
       <button class="tab-btn" id="tab-settings" data-target="settings-view">
         <span>👨‍🌾</span> Farmer Profile
       </button>
@@ -223,6 +226,16 @@
                 </select>
                 <span id="interior-mode-active-badge" style="background: #795548; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; border: 1.5px solid #5d4037;">OFF</span>
               </div>
+            </div>
+
+            <!-- Neighbor Visiting View HUD (จะแสดงเมื่อกำลังเยี่ยมฟาร์มเพื่อน) -->
+            <div id="visiting-hud" style="display: none; justify-content: space-between; align-items: center; background: #e3f2fd; border: 2.5px solid #1e88e5; border-radius: 12px; padding: 8px 12px; margin-bottom: 8px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <span id="visiting-title" style="font-weight: bold; color: #0d47a1; font-size: 0.9rem;">✈️ กำลังเยี่ยมฟาร์มของ: เพื่อนชาวสวน</span>
+                <button class="action-btn" id="btn-visit-house" style="margin:0; font-size:0.75rem; padding:4px 10px; background:#4caf50; border-color:#388e3c; box-shadow: 0 3px 0 #2e7d32;">🏠 ชมในบ้านเพื่อน</button>
+                <button class="action-btn" id="btn-social-gift" style="margin:0; font-size:0.75rem; padding:4px 10px; background:#e040fb; border-color:#d500f9; box-shadow: 0 3px 0 #aa00ff;">🎁 ส่งของขวัญ (🪙15)</button>
+              </div>
+              <button class="action-btn" id="btn-return-farm" style="margin:0; font-size:0.8rem; padding:6px 12px; background:#f44336; border-color:#d32f2f; box-shadow: 0 4px 0 #b71c1c;">🚪 กลับฟาร์มของฉัน (Back)</button>
             </div>
 
             <div class="farm-canvas-container" id="farm-canvas-container" style="position: relative;">
@@ -599,6 +612,25 @@
                 <!-- Populated dynamically -->
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4.6 Social Center (เพื่อนบ้าน) Panel -->
+    <section class="view-panel" id="social-view">
+      <div class="settings-panel" style="max-width: 800px; margin: 0 auto; background: linear-gradient(to bottom, #a1887f, #8d6e63); border: 4px solid var(--wood-dark); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-wood); padding: 25px; color: var(--white); text-align: center;">
+        <h2 class="panel-title" style="color: var(--gold); text-shadow: 0 2px 0 rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>👭</span> ศูนย์รวมเพื่อนบ้าน (Social Center)
+        </h2>
+        <p style="font-size: 0.95rem; margin-bottom: 20px; color: #fffdf5; opacity: 0.95;">
+          เยี่ยมชมฟาร์ม 3D ของเพื่อนชาวสวนคนอื่นๆ ช่วยรดน้ำผักที่แห้งเพื่อรับเหรียญรางวัล หรือส่งของขวัญแสนน่ารัก!
+        </p>
+
+        <div style="background: rgba(255, 255, 255, 0.9); border-radius: 12px; padding: 20px; color: var(--text-dark); border: 2.5px solid var(--wood-dark);">
+          <h3 style="margin-top: 0; margin-bottom: 15px; color: var(--wood-dark); font-weight: bold; text-shadow: none;">รายชื่อเพื่อนชาวสวนในละแวกนี้ (Neighbor List)</h3>
+          <div id="social-friends-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+            <!-- Neighbor cards will be populated dynamically -->
           </div>
         </div>
       </div>

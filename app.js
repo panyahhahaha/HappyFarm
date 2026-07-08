@@ -707,6 +707,9 @@ function setupEventListeners() {
       if (target === 'family-view') {
         renderFamilyPanel();
       }
+      if (target === 'social-view') {
+        renderSocialCenter();
+      }
     });
   });
 
@@ -884,6 +887,34 @@ function setupEventListeners() {
           badge.textContent = 'OFF';
           badge.style.background = '#795548';
         }
+      }
+    });
+  }
+
+  // Social Center visiting HUD listeners
+  const btnReturnFarm = document.getElementById('btn-return-farm');
+  if (btnReturnFarm) {
+    btnReturnFarm.addEventListener('click', stopVisitingFriend);
+  }
+  
+  const btnVisitHouse = document.getElementById('btn-visit-house');
+  if (btnVisitHouse) {
+    btnVisitHouse.addEventListener('click', () => {
+      if (currentViewMode === 'farm') {
+        visitFriendHouse();
+        btnVisitHouse.textContent = "🚪 ออกนอกบ้านเพื่อน";
+      } else {
+        exitHouseInterior();
+        btnVisitHouse.textContent = "🏠 ชมในบ้านเพื่อน";
+      }
+    });
+  }
+  
+  const btnSocialGift = document.getElementById('btn-social-gift');
+  if (btnSocialGift) {
+    btnSocialGift.addEventListener('click', () => {
+      if (visitingUser) {
+        sendSocialGift(visitingUser);
       }
     });
   }
@@ -2802,6 +2833,7 @@ let scene, camera, renderer, controls;
 let farmWorldGroup = null;
 let houseInteriorGroup = null;
 let currentViewMode = 'farm'; // 'farm' or 'interior'
+let visitingUser = null; // username of neighbor being visited (null when on own farm)
 let active3DInteriorDecorations = [];
 let groundMesh;
 let active3DPlots = [];
@@ -3656,6 +3688,7 @@ function updateFarmerHelper3D(dt) {
 
 function renderPlots3D() {
   if (!scene || !state) return;
+  const targetState = visitingUser ? usersDB[visitingUser] : state;
 
   active3DPlots.forEach(p => {
     scene.remove(p.group);
@@ -3666,7 +3699,7 @@ function renderPlots3D() {
   const startZ = -2;
   const spacing = 7.5;
 
-  state.plots.forEach(plot => {
+  targetState.plots.forEach(plot => {
     let plotX, plotZ;
     if (plot.id < 9) {
       const row = Math.floor(plot.id / 3);
@@ -3856,6 +3889,9 @@ function renderPlots3D() {
       crop: cropMesh
     });
   });
+  
+  // Spawn the visiting neighbor's avatar if active
+  spawnVisitingUserAvatar();
 }
 
 function updateWaterDrops3D(dt) {
@@ -3870,15 +3906,16 @@ function updateWaterDrops3D(dt) {
 
 function renderDecorations3D() {
   if (!scene || !state) return;
+  const targetState = visitingUser ? usersDB[visitingUser] : state;
 
   active3DDecorations.forEach(d => {
     scene.remove(d.group);
   });
   active3DDecorations = [];
 
-  if (!state.decorations) state.decorations = [];
+  if (!targetState.decorations) targetState.decorations = [];
 
-  state.decorations.forEach(decor => {
+  targetState.decorations.forEach(decor => {
     const decorGroup = new THREE.Group();
     decorGroup.position.set(decor.x, 0, decor.z);
 
@@ -4017,11 +4054,12 @@ function renderDecorations3D() {
 
 function sync3DAnimals() {
   if (!scene || !state) return;
+  const targetState = visitingUser ? usersDB[visitingUser] : state;
 
   // Create a map of active instances in the state
   const activeInstances = {};
-  Object.keys(state.animals).forEach(animalKey => {
-    const animal = state.animals[animalKey];
+  Object.keys(targetState.animals).forEach(animalKey => {
+    const animal = targetState.animals[animalKey];
     if (!animal.instances) animal.instances = [];
     animal.instances.forEach(inst => {
       activeInstances[inst.id] = inst;
@@ -4764,6 +4802,10 @@ function setupCanvasEvents() {
         return;
       } else if (data.type === 'plot') {
         const plotId = data.plotId;
+        if (visitingUser) {
+          helpWaterFriendCrop(plotId);
+          return;
+        }
         const plot = state.plots[plotId];
         
         if (plot) {
@@ -5504,9 +5546,11 @@ function renderInteriorDecorations() {
   });
   active3DInteriorDecorations = [];
   
-  if (!state || !state.family || !state.family.interiorDecorations) return;
+  if (!state) return;
+  const targetState = visitingUser ? usersDB[visitingUser] : state;
+  if (!targetState.family || !targetState.family.interiorDecorations) return;
   
-  state.family.interiorDecorations.forEach(decor => {
+  targetState.family.interiorDecorations.forEach(decor => {
     const group = new THREE.Group();
     group.position.set(decor.x, 0, decor.z);
     
@@ -5892,7 +5936,309 @@ function expandFarm() {
   alert("🎉 ยินดีด้วย! ฟาร์มของคุณได้รับการขยายพื้นที่เรียบร้อยแล้ว เพิ่มแปลงผักใหม่ 6 แปลงทางด้านขวาของฟาร์ม! 🚜");
 }
 
-// Compatibility dummy/hooks for legacy code
+// ==========================================
+// 👭 Social Center & Neighbor Visiting Functions
+// ==========================================
+
+let visitingAvatarMesh = null;
+
+function renderSocialCenter() {
+  const container = document.getElementById('social-friends-container');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  // List all registered users except current user
+  const usernames = Object.keys(usersDB).filter(u => u !== currentUser);
+  
+  if (usernames.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 25px; text-align: center; color: #795548; font-size: 0.95rem;">
+        🌵 ไม่มีเพื่อนชาวสวนคนอื่นบนเครื่องนี้ คุณสามารถกด "สลับผู้ใช้" ในแท็บ Farmer Profile เพื่อสร้างโปรไฟล์ใหม่ให้เพื่อนมาเล่นด้วยกันได้!
+      </div>
+    `;
+    return;
+  }
+  
+  usernames.forEach(username => {
+    const friend = usersDB[username];
+    const card = document.createElement('div');
+    card.className = 'market-card';
+    card.style.background = '#fbe9e7';
+    card.style.border = '2.5px solid var(--wood-dark)';
+    card.style.borderRadius = '12px';
+    card.style.padding = '15px';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.alignItems = 'center';
+    card.style.textAlign = 'center';
+    card.style.color = 'var(--text-dark)';
+    
+    // Choose active outfit emoji representation
+    const activeOutfit = friend.activeOutfit || 'default';
+    const outfitEmoji = outfitMeta[activeOutfit] ? outfitMeta[activeOutfit].emoji : '👕';
+    
+    card.innerHTML = `
+      <div style="font-size: 2.2rem; margin-bottom: 5px;">🧑‍🌾${outfitEmoji}</div>
+      <div style="font-weight: bold; font-size: 1.05rem; color: var(--wood-dark);">${username}</div>
+      <div style="font-size: 0.8rem; margin: 4px 0 12px 0; color: #5d4037; display:flex; flex-direction:column; gap:2px;">
+        <span>⭐ เลเวล: <strong>${friend.level || 1}</strong></span>
+        <span>🪙 เหรียญทอง: <strong>${friend.coins || 0}</strong></span>
+        <span>🏡 เลเวลบ้าน: <strong>${friend.family ? friend.family.houseLevel || 1 : 1}</strong></span>
+      </div>
+      <div style="width:100%; display:flex; gap:8px;">
+        <button class="action-btn" style="flex:1; margin:0; padding:6px; font-size:0.8rem; background:#1e88e5; border-color:#1565c0; box-shadow: 0 4px 0 #0d47a1;">
+          ✈️ เยี่ยมชม
+        </button>
+        <button class="action-btn" style="flex:1; margin:0; padding:6px; font-size:0.8rem; background:#e040fb; border-color:#d500f9; box-shadow: 0 4px 0 #aa00ff;">
+          🎁 ส่งของขวัญ
+        </button>
+      </div>
+    `;
+    
+    const btns = card.querySelectorAll('button');
+    btns[0].addEventListener('click', () => startVisitingFriend(username));
+    btns[1].addEventListener('click', () => sendSocialGift(username));
+    
+    container.appendChild(card);
+  });
+}
+
+function startVisitingFriend(username) {
+  visitingUser = username;
+  
+  // Play enter sound
+  AudioEngine.playSFX('correct');
+  
+  // Swap HUDs
+  document.getElementById('visiting-hud').style.display = 'flex';
+  document.getElementById('visiting-title').textContent = `✈️ กำลังเยี่ยมฟาร์มของ: ${username} (Visitor Mode)`;
+  document.getElementById('btn-visit-house').textContent = "🏠 ชมในบ้านเพื่อน";
+  
+  // Go to farm tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+  
+  document.getElementById('tab-farm').classList.add('active');
+  document.getElementById('farm-view').classList.add('active');
+  
+  // Disable normal farm upgrades/decor HUD
+  document.getElementById('btn-expand-farm').disabled = true;
+  document.getElementById('decor-brush-select').disabled = true;
+  
+  // Trigger full 3D rebuild
+  renderAll();
+  
+  alert(`✈️ ยินดีต้อนรับสู่ฟาร์มของ ${username}! \n\nคุณสามารถช่วยเพื่อนรดน้ำแปลงดินที่แห้ง (ดินสีเทา/สีน้ำตาลอ่อน) ได้ โดยคลิกเพื่อรดน้ำ และคุณจะได้รับรางวัล 🪙10 เหรียญทอง!`);
+}
+
+function stopVisitingFriend() {
+  visitingUser = null;
+  
+  // Play exit sound
+  AudioEngine.playSFX('click');
+  
+  // Hide visiting HUD
+  document.getElementById('visiting-hud').style.display = 'none';
+  
+  // Restore HUD state
+  document.getElementById('btn-expand-farm').disabled = false;
+  document.getElementById('decor-brush-select').disabled = false;
+  
+  if (visitingAvatarMesh) {
+    scene.remove(visitingAvatarMesh);
+    visitingAvatarMesh = null;
+  }
+  
+  renderAll();
+}
+
+function visitFriendHouse() {
+  if (!visitingUser) return;
+  
+  currentViewMode = 'interior';
+  AudioEngine.playSFX('click');
+  
+  farmWorldGroup.visible = false;
+  houseInteriorGroup.visible = true;
+  
+  // Lock interior brush selector so they can't change friend's furniture!
+  document.getElementById('interior-brush-select').disabled = true;
+  
+  // Adjust camera to view room
+  camera.position.set(0, 15, 18);
+  controls.target.set(0, 1.5, 0);
+  controls.minDistance = 5;
+  controls.maxDistance = 35;
+  controls.update();
+  
+  // Build interior room 3D meshes using neighbor's state
+  createHouseInterior();
+}
+
+function helpWaterFriendCrop(plotId) {
+  if (!visitingUser) return;
+  const friendState = usersDB[visitingUser];
+  if (!friendState) return;
+  const plot = friendState.plots[plotId];
+  if (!plot) return;
+  
+  if (plot.isLocked) {
+    alert("แปลงดินของเพื่อนยังล็อกอยู่! ช่วยปลดล็อกไม่ได้นะครับ");
+    return;
+  }
+  
+  if (plot.state !== 'growing') {
+    alert("แปลงดินนี้ว่างเปล่าหรือพร้อมเก็บเกี่ยวอยู่ ไม่ต้องการการรดน้ำครับ!");
+    return;
+  }
+  
+  if (plot.isWatered) {
+    alert("แปลงดินนี้รดน้ำเรียบร้อยแล้ว!");
+    return;
+  }
+  
+  // Help water: update friendState
+  plot.isWatered = true;
+  plot.progress = Math.min(plot.progress + 40, 100);
+  if (plot.progress >= 100) {
+    plot.state = 'ready';
+    plot.progress = 100;
+  }
+  
+  // Reward the current user!
+  state.coins += 10;
+  
+  // Save both states!
+  usersDB[visitingUser] = friendState;
+  usersDB[currentUser] = state;
+  saveUsersDB();
+  
+  // Re-render
+  renderAll();
+  AudioEngine.playSFX('water');
+  
+  // Spawn water particles at correct coordinates
+  let plotX, plotZ;
+  if (plotId < 9) {
+    const row = Math.floor(plotId / 3);
+    const col = plotId % 3;
+    plotX = -6 + col * 7.5;
+    plotZ = -2 + row * 7.5;
+  } else {
+    const expId = plotId - 9;
+    const row = Math.floor(expId / 2);
+    const col = expId % 2;
+    plotX = 18.0 + col * 7.5;
+    plotZ = -2.0 + row * 7.5;
+  }
+  spawnWaterEffectParticles(new THREE.Vector3(plotX, 0.5, plotZ));
+  
+  // Show a floating text for reward
+  const event = window.event;
+  if (event) {
+    createFloatingText(event.clientX, event.clientY, `+10 🪙 (ช่วยรดน้ำ!)`, 'var(--gold-dark)');
+  }
+  
+  alert(`💦 คุณช่วยรดน้ำผักให้ฟาร์มของ ${visitingUser} แล้ว! เพื่อนจะได้รับการเร่งการเติบโต และคุณได้รับรางวัล 🪙10 เหรียญทอง!`);
+}
+
+function sendSocialGift(username) {
+  if (!state) return;
+  if (state.coins < 15) {
+    AudioEngine.playSFX('incorrect');
+    alert("คุณมีเหรียญทองไม่เพียงพอสำหรับการส่งของขวัญ! (ต้องการใช้ 🪙15)");
+    return;
+  }
+  
+  state.coins -= 15;
+  
+  // Add logs and coins to friend's profile!
+  const friendState = usersDB[username];
+  if (friendState) {
+    if (!friendState.logs) friendState.logs = [];
+    friendState.logs.unshift({
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString(),
+      type: 'social_gift',
+      desc: `ได้รับของขวัญแสนอบอุ่นจากเพื่อนชาวสวน [${currentUser}] 🎁 (+🪙20 เหรียญทอง!)`
+    });
+    friendState.coins = (friendState.coins || 0) + 20;
+    usersDB[username] = friendState;
+  }
+  
+  usersDB[currentUser] = state;
+  saveUsersDB();
+  renderAll();
+  AudioEngine.playSFX('correct');
+  
+  alert(`🎁 ส่งของขวัญแสนน่ารักให้ ${username} สำเร็จแล้ว! เพื่อนจะได้รับเหรียญทอง 🪙20 เหรียญเป็นของขวัญเมื่อเข้าระบบครั้งถัดไป!`);
+}
+
+function spawnVisitingUserAvatar() {
+  if (visitingAvatarMesh) {
+    scene.remove(visitingAvatarMesh);
+    visitingAvatarMesh = null;
+  }
+  if (!visitingUser) return;
+  
+  const neighbor = usersDB[visitingUser];
+  if (!neighbor) return;
+  
+  const group = new THREE.Group();
+  group.position.set(6, 0, 15); // Stand near the plots
+  
+  // Head
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.65, 16, 16), new THREE.MeshLambertMaterial({ color: 0xffe0bd }));
+  head.position.y = 2.45;
+  head.castShadow = true;
+  group.add(head);
+  
+  // Hat
+  const activeOutfitKey = neighbor.activeOutfit || 'default';
+  const outfit = outfitMeta[activeOutfitKey] || outfitMeta.default;
+  const hatGeo = new THREE.ConeGeometry(0.85, 0.7, 8);
+  const hatMat = new THREE.MeshLambertMaterial({ color: outfit.hatColor || 0xffb74d });
+  const hat = new THREE.Mesh(hatGeo, hatMat);
+  hat.position.set(0, 2.9, 0);
+  group.add(hat);
+  
+  // Body
+  const bodyGeo = new THREE.BoxGeometry(1.0, 1.2, 0.5);
+  const bodyMat = new THREE.MeshLambertMaterial({ color: outfit.color });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 1.5;
+  body.castShadow = true;
+  group.add(body);
+  
+  // Pants
+  const pantsGeo = new THREE.BoxGeometry(0.9, 0.8, 0.45);
+  const pantsMat = new THREE.MeshLambertMaterial({ color: outfit.pantsColor });
+  const pants = new THREE.Mesh(pantsGeo, pantsMat);
+  pants.position.y = 0.8;
+  group.add(pants);
+  
+  // Waving Arms
+  const armGeo = new THREE.BoxGeometry(0.25, 0.8, 0.25);
+  const armL = new THREE.Mesh(armGeo, bodyMat);
+  armL.position.set(-0.65, 1.6, 0);
+  group.add(armL);
+  
+  const armR = new THREE.Mesh(armGeo, bodyMat);
+  armR.position.set(0.65, 1.8, 0.15);
+  armR.rotation.z = -1.2; // Waving stance
+  group.add(armR);
+  
+  // Label sprite above head
+  const sprite = createSpeechBubbleSprite(`${visitingUser} (Lv.${neighbor.level || 1})`);
+  sprite.position.set(0, 3.4, 0);
+  group.add(sprite);
+  
+  scene.add(group);
+  visitingAvatarMesh = group;
+}
+
+// Start everything after all declarations are fully initialized
 function preRenderSprites() {}
 function syncCanvasAnimals() {
   sync3DAnimals();
