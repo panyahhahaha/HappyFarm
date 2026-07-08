@@ -2718,23 +2718,67 @@ const AudioEngine = {
   },
 
   synthTruck(time) {
+    // 1. HORSE NEIGH (เสียงม้าร้อง) at the start
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(85, time);
-    osc.frequency.linearRampToValueAtTime(140, time + 0.6);
-    osc.frequency.linearRampToValueAtTime(65, time + 1.6);
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(550, time);
+    osc.frequency.exponentialRampToValueAtTime(950, time + 0.15);
+    osc.frequency.linearRampToValueAtTime(750, time + 0.35);
+    osc.frequency.exponentialRampToValueAtTime(850, time + 0.5);
+    osc.frequency.linearRampToValueAtTime(450, time + 0.85);
+    
+    // Add whinny frequency modulation (16Hz Vibrato)
+    const vibrato = this.ctx.createOscillator();
+    const vibratoGain = this.ctx.createGain();
+    vibrato.frequency.value = 16;
+    vibratoGain.gain.value = 55;
+    vibrato.connect(vibratoGain);
+    vibratoGain.connect(osc.frequency);
+    vibrato.start(time);
+    vibrato.stop(time + 0.8);
     
     gain.gain.setValueAtTime(0, time);
-    gain.gain.linearRampToValueAtTime(this.volume * 0.4, time + 0.2);
-    gain.gain.linearRampToValueAtTime(this.volume * 0.4, time + 1.3);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 2.0);
+    gain.gain.linearRampToValueAtTime(this.volume * 0.3, time + 0.08);
+    gain.gain.exponentialRampToValueAtTime(this.volume * 0.15, time + 0.4);
+    gain.gain.linearRampToValueAtTime(this.volume * 0.15, time + 0.6);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.85);
     
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     
     osc.start(time);
-    osc.stop(time + 2.0);
+    osc.stop(time + 0.9);
+    
+    // 2. RHYTHMIC CLIP-CLOP HOOVES (เสียงเกือกม้าวิ่งควบกระทบดิน)
+    const hoofBeats = [
+      { t: 0.30, f: 180 }, { t: 0.42, f: 160 },
+      { t: 0.70, f: 180 }, { t: 0.82, f: 160 },
+      { t: 1.10, f: 175 }, { t: 1.22, f: 155 },
+      { t: 1.50, f: 175 }, { t: 1.62, f: 155 },
+      { t: 1.90, f: 170 }, { t: 2.02, f: 150 }
+    ];
+    
+    hoofBeats.forEach(beat => {
+      const beatTime = time + beat.t;
+      const beatOsc = this.ctx.createOscillator();
+      const beatGain = this.ctx.createGain();
+      
+      beatOsc.type = 'triangle';
+      beatOsc.frequency.setValueAtTime(beat.f, beatTime);
+      beatOsc.frequency.exponentialRampToValueAtTime(50, beatTime + 0.08);
+      
+      beatGain.gain.setValueAtTime(0, beatTime);
+      beatGain.gain.linearRampToValueAtTime(this.volume * 0.22, beatTime + 0.01);
+      beatGain.gain.exponentialRampToValueAtTime(0.001, beatTime + 0.08);
+      
+      beatOsc.connect(beatGain);
+      beatGain.connect(this.ctx.destination);
+      
+      beatOsc.start(beatTime);
+      beatOsc.stop(beatTime + 0.09);
+    });
   },
 
   startBGM() {
