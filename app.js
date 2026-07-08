@@ -84,6 +84,17 @@ const partnerMeta = {
   }
 };
 
+// Interior furniture metadata (for house decoration mode)
+const interiorMeta = {
+  bed_wood: { name: 'Wooden Bed 🛌', cost: 150, emoji: '🛌', desc: 'Cozy wooden bed to rest and sleep' },
+  sofa_red: { name: 'Cozy Sofa 🛋️', cost: 120, emoji: '🛋️', desc: 'Comfy red velvet sofa' },
+  table_wood: { name: 'Wooden Table 🟫', cost: 80, emoji: '🟫', desc: 'Sturdy rustic wooden table' },
+  chair_wood: { name: 'Wooden Chair 🪑', cost: 40, emoji: '🪑', desc: 'Simple matching wooden chair' },
+  rug_green: { name: 'Emerald Rug 🟩', cost: 60, emoji: '🟩', desc: 'Soft emerald green woven carpet' },
+  fireplace: { name: 'Cozy Fireplace 🔥', cost: 200, emoji: '🔥', desc: 'Warm stone brick fireplace' },
+  tv_set: { name: 'Retro TV Set 📺', cost: 180, emoji: '📺', desc: 'Retro wooden CRT television' }
+};
+
 // Active quiz tracking
 let activeQuiz = {
   question: null,
@@ -329,7 +340,9 @@ function getNewUserState(username, pin) {
       childSchoolGrade: 0, // 0 (KG), 1-6 (Grade 1-6)
       childGrowthProgress: 0, // 0-100
       assignedTask: "idle", // "idle", "auto_water", "auto_harvest"
-      farmerAge: 18 // Farmer starting age
+      farmerAge: 18, // Farmer starting age
+      farmExpansionLevel: 0,
+      interiorDecorations: []
     },
     quizHistory: {
       lastQuizDate: "",
@@ -841,6 +854,39 @@ function setupEventListeners() {
     tabDecorBtn.addEventListener('click', () => setShopTab('decor'));
     tabClothesBtn.addEventListener('click', () => setShopTab('clothes'));
   }
+
+  // House Interior & Sleep Event Listeners
+  const btnExitInterior = document.getElementById('btn-exit-interior');
+  if (btnExitInterior) {
+    btnExitInterior.addEventListener('click', exitHouseInterior);
+  }
+  
+  const btnSleepHouse = document.getElementById('btn-sleep-house');
+  if (btnSleepHouse) {
+    btnSleepHouse.addEventListener('click', sleepInHouse);
+  }
+  
+  const btnExpandFarm = document.getElementById('btn-expand-farm');
+  if (btnExpandFarm) {
+    btnExpandFarm.addEventListener('click', expandFarm);
+  }
+  
+  const interiorSelectEl = document.getElementById('interior-brush-select');
+  if (interiorSelectEl) {
+    interiorSelectEl.addEventListener('change', (e) => {
+      AudioEngine.playSFX('click');
+      const badge = document.getElementById('interior-mode-active-badge');
+      if (badge) {
+        if (e.target.value !== 'none') {
+          badge.textContent = 'ON';
+          badge.style.background = 'var(--success)';
+        } else {
+          badge.textContent = 'OFF';
+          badge.style.background = '#795548';
+        }
+      }
+    });
+  }
 }
 
 // Formatting Helper for Duration
@@ -1069,6 +1115,25 @@ function renderStats() {
   els.xpText.textContent = `${state.xp}/${xpNeeded}`;
   const xpPercent = Math.min((state.xp / xpNeeded) * 100, 100);
   els.xpBarInner.style.width = `${xpPercent}%`;
+
+  // Update Farm Expansion button state
+  const expandBtn = document.getElementById('btn-expand-farm');
+  if (expandBtn) {
+    if (state.family && state.family.farmExpansionLevel >= 1) {
+      expandBtn.textContent = "🚜 ฟาร์มขยายแล้ว (Fully Expanded)";
+      expandBtn.disabled = true;
+      expandBtn.style.background = "#81c784";
+      expandBtn.style.borderColor = "#4caf50";
+      expandBtn.style.boxShadow = "none";
+    } else {
+      expandBtn.textContent = "🚜 ขยายพื้นที่ฟาร์ม (+6 แปลง) (🪙 1,000)";
+      // If user is inside the house, it should be disabled
+      expandBtn.disabled = (state.coins < 1000) || (currentViewMode === 'interior');
+      expandBtn.style.background = "";
+      expandBtn.style.borderColor = "";
+      expandBtn.style.boxShadow = "";
+    }
+  }
 }
 
 function renderPlots() {
@@ -2734,6 +2799,10 @@ const AudioEngine = {
 // THREE.JS 3D GAME ENGINE
 // ============================================================================
 let scene, camera, renderer, controls;
+let farmWorldGroup = null;
+let houseInteriorGroup = null;
+let currentViewMode = 'farm'; // 'farm' or 'interior'
+let active3DInteriorDecorations = [];
 let groundMesh;
 let active3DPlots = [];
 let active3DAnimals = [];
@@ -2785,6 +2854,33 @@ function initCanvasEngine() {
 
   // Scene
   scene = new THREE.Scene();
+
+  farmWorldGroup = new THREE.Group();
+  scene.add(farmWorldGroup);
+
+  houseInteriorGroup = new THREE.Group();
+  scene.add(houseInteriorGroup);
+  houseInteriorGroup.visible = false;
+
+  // Intercept scene.add to redirect meshes to farmWorldGroup
+  const realAdd = scene.add;
+  scene.add = function(object) {
+    if (object === farmWorldGroup || object === houseInteriorGroup || object.isLight || object.isDirectionalLight || object.isAmbientLight) {
+      realAdd.call(scene, object);
+    } else {
+      farmWorldGroup.add(object);
+    }
+  };
+
+  // Intercept scene.remove to redirect removals
+  const realRemove = scene.remove;
+  scene.remove = function(object) {
+    if (object === farmWorldGroup || object === houseInteriorGroup || object.isLight) {
+      realRemove.call(scene, object);
+    } else {
+      farmWorldGroup.remove(object);
+    }
+  };
   
   // Sky color (set initially)
   renderer.setClearColor(0x81d4fa, 1);
@@ -2933,21 +3029,25 @@ function build3DWorld() {
   houseBody.position.y = 2.5;
   houseBody.castShadow = true;
   houseBody.receiveShadow = true;
+  houseBody.userData = { type: 'farmhouse' };
   houseGroup.add(houseBody);
 
   const houseRoof = new THREE.Mesh(new THREE.ConeGeometry(5.8, 3.5, 4), new THREE.MeshLambertMaterial({ color: 0xd84315 }));
   houseRoof.position.y = 5.0 + 1.75;
   houseRoof.rotation.y = Math.PI / 4;
   houseRoof.castShadow = true;
+  houseRoof.userData = { type: 'farmhouse' };
   houseGroup.add(houseRoof);
 
   const door = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 0.1), new THREE.MeshLambertMaterial({ color: 0x5d4037 }));
   door.position.set(0, 1.25, 3.51);
+  door.userData = { type: 'farmhouse' };
   houseGroup.add(door);
 
   const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.5, 0.8), new THREE.MeshLambertMaterial({ color: 0x78909c }));
   chimney.position.set(2.0, 5.0, -2.0);
   chimney.castShadow = true;
+  chimney.userData = { type: 'farmhouse' };
   houseGroup.add(chimney);
 
   scene.add(houseGroup);
@@ -3567,11 +3667,20 @@ function renderPlots3D() {
   const spacing = 7.5;
 
   state.plots.forEach(plot => {
-    const row = Math.floor(plot.id / 3);
-    const col = plot.id % 3;
-
-    const plotX = startX + col * spacing;
-    const plotZ = startZ + row * spacing;
+    let plotX, plotZ;
+    if (plot.id < 9) {
+      const row = Math.floor(plot.id / 3);
+      const col = plot.id % 3;
+      plotX = startX + col * spacing;
+      plotZ = startZ + row * spacing;
+    } else {
+      // Expanded patch: 2 columns, 3 rows, on the right side of the farm
+      const expId = plot.id - 9;
+      const row = Math.floor(expId / 2);
+      const col = expId % 2;
+      plotX = 18.0 + col * spacing;
+      plotZ = -2.0 + row * spacing;
+    }
 
     const plotGroup = new THREE.Group();
     plotGroup.position.set(plotX, 0, plotZ);
@@ -4451,15 +4560,25 @@ function setupCanvasEvents() {
     raycaster.setFromCamera(mouse, camera);
     
     const targets = [];
-    scene.traverse(child => {
-      if (child.isMesh) {
-        if (child.userData && (child.userData.type === 'plot' || child.userData.type === 'animal' || child.userData.type === 'decoration')) {
-          targets.push(child);
-        } else if (child === groundMesh) {
-          targets.push(child);
+    if (currentViewMode === 'farm') {
+      scene.traverse(child => {
+        if (child.isMesh) {
+          if (child.userData && (child.userData.type === 'plot' || child.userData.type === 'animal' || child.userData.type === 'decoration' || child.userData.type === 'farmhouse')) {
+            targets.push(child);
+          } else if (child === groundMesh) {
+            targets.push(child);
+          }
         }
-      }
-    });
+      });
+    } else {
+      scene.traverse(child => {
+        if (child.isMesh) {
+          if (child.userData && (child.userData.type === 'interior_floor' || child.userData.type === 'interior_decor')) {
+            targets.push(child);
+          }
+        }
+      });
+    }
     
     const intersects = raycaster.intersectObjects(targets, true);
     if (intersects.length > 0) {
@@ -4510,6 +4629,33 @@ function setupCanvasEvents() {
     const clickY = e.clientY - rect.top;
 
     const hit = getRaycastIntersection(e.clientX, e.clientY);
+
+    // Interior view click handling
+    if (currentViewMode === 'interior') {
+      const selectEl = document.getElementById('interior-brush-select');
+      const activeBrush = selectEl ? selectEl.value : 'none';
+      if (hit && activeBrush !== 'none') {
+        const snapX = Math.round(hit.point.x);
+        const snapZ = Math.round(hit.point.z);
+        if (snapX >= -7 && snapX <= 7 && snapZ >= -7 && snapZ <= 7) {
+          if (activeBrush === 'remove') {
+            const hitData = hit.object.userData;
+            if (hitData && hitData.type === 'interior_decor') {
+              removeFurniture(hitData.x, hitData.z);
+            }
+          } else {
+            placeFurniture(activeBrush, snapX, snapZ);
+          }
+        }
+      }
+      return;
+    }
+
+    // Entering farmhouse check
+    if (hit && hit.object && hit.object.userData && hit.object.userData.type === 'farmhouse') {
+      enterHouseInterior();
+      return;
+    }
 
     const decorSelectEl = document.getElementById('decor-brush-select');
     const activeBrush = decorSelectEl ? decorSelectEl.value : 'none';
@@ -5287,7 +5433,9 @@ function triggerInheritance() {
     childSchoolGrade: 0,
     childGrowthProgress: 0,
     assignedTask: "idle",
-    farmerAge: 18
+    farmerAge: 18,
+    farmExpansionLevel: 0,
+    interiorDecorations: []
   };
   
   usersDB[currentUser] = state;
@@ -5301,6 +5449,447 @@ function triggerInheritance() {
   
   sync3DAnimals();
   renderAll();
+}
+
+// ==========================================
+// 🏠 House Interior & Room Decor View Functions
+// ==========================================
+
+function createHouseInterior() {
+  // Clear any existing children of houseInteriorGroup first
+  while(houseInteriorGroup.children.length > 0) {
+    houseInteriorGroup.remove(houseInteriorGroup.children[0]);
+  }
+  
+  // Floor (wooden floor)
+  const floorGeom = new THREE.BoxGeometry(16, 0.5, 16);
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 }); // warm brown wood
+  const floor = new THREE.Mesh(floorGeom, floorMat);
+  floor.position.y = -0.25;
+  floor.receiveShadow = true;
+  floor.userData = { type: 'interior_floor' };
+  houseInteriorGroup.add(floor);
+  
+  // Walls
+  // Back wall (Z = -8)
+  const backWallGeom = new THREE.BoxGeometry(16, 8, 0.5);
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.9 }); // cream plaster wall
+  const backWall = new THREE.Mesh(backWallGeom, wallMat);
+  backWall.position.set(0, 4, -8);
+  backWall.receiveShadow = true;
+  houseInteriorGroup.add(backWall);
+  
+  // Left wall (X = -8)
+  const leftWallGeom = new THREE.BoxGeometry(0.5, 8, 16);
+  const leftWall = new THREE.Mesh(leftWallGeom, wallMat);
+  leftWall.position.set(-8, 4, 0);
+  leftWall.receiveShadow = true;
+  houseInteriorGroup.add(leftWall);
+  
+  // Right wall (X = 8)
+  const rightWallGeom = new THREE.BoxGeometry(0.5, 8, 16);
+  const rightWall = new THREE.Mesh(rightWallGeom, wallMat);
+  rightWall.position.set(8, 4, 0);
+  rightWall.receiveShadow = true;
+  houseInteriorGroup.add(rightWall);
+
+  // Render placed furniture
+  renderInteriorDecorations();
+}
+
+function renderInteriorDecorations() {
+  // Clear old 3D interior decorations
+  active3DInteriorDecorations.forEach(m => {
+    houseInteriorGroup.remove(m);
+  });
+  active3DInteriorDecorations = [];
+  
+  if (!state || !state.family || !state.family.interiorDecorations) return;
+  
+  state.family.interiorDecorations.forEach(decor => {
+    const group = new THREE.Group();
+    group.position.set(decor.x, 0, decor.z);
+    
+    // Tag the top-level group and its meshes so raycasting hits can find the position for removal!
+    group.userData = { type: 'interior_decor', key: decor.key, x: decor.x, z: decor.z };
+    
+    if (decor.key === 'bed_wood') {
+      // Wood frame
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(3, 0.8, 4.5), new THREE.MeshStandardMaterial({ color: 0x5d4037 }));
+      frame.position.y = 0.4;
+      frame.castShadow = true;
+      frame.receiveShadow = true;
+      group.add(frame);
+      
+      // Pillow
+      const pillow = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.3, 1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      pillow.position.set(0, 0.9, -1.5);
+      group.add(pillow);
+      
+      // Mattress/Blanket
+      const blanket = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.4, 3.2), new THREE.MeshStandardMaterial({ color: 0x3f51b5 })); // dark blue blanket
+      blanket.position.set(0, 0.9, 0.5);
+      blanket.castShadow = true;
+      group.add(blanket);
+      
+    } else if (decor.key === 'sofa_red') {
+      // Base
+      const base = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 1.8), new THREE.MeshStandardMaterial({ color: 0xd32f2f }));
+      base.position.y = 0.3;
+      base.castShadow = true;
+      group.add(base);
+      
+      // Backrest
+      const back = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 0.4), new THREE.MeshStandardMaterial({ color: 0xb71c1c }));
+      back.position.set(0, 0.9, -0.7);
+      back.castShadow = true;
+      group.add(back);
+      
+      // Armrests
+      const armL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.9, 1.8), new THREE.MeshStandardMaterial({ color: 0xb71c1c }));
+      armL.position.set(-1.65, 0.75, 0);
+      group.add(armL);
+      
+      const armR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.9, 1.8), new THREE.MeshStandardMaterial({ color: 0xb71c1c }));
+      armR.position.set(1.65, 0.75, 0);
+      group.add(armR);
+      
+    } else if (decor.key === 'table_wood') {
+      // Table Top
+      const top = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 2.2), new THREE.MeshStandardMaterial({ color: 0x8d6e63 }));
+      top.position.y = 1.4;
+      top.castShadow = true;
+      top.receiveShadow = true;
+      group.add(top);
+      
+      // 4 Legs
+      const legGeom = new THREE.BoxGeometry(0.2, 1.4, 0.2);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+      
+      const leg1 = new THREE.Mesh(legGeom, legMat);
+      leg1.position.set(-1.4, 0.7, -0.9);
+      group.add(leg1);
+      
+      const leg2 = new THREE.Mesh(legGeom, legMat);
+      leg2.position.set(1.4, 0.7, -0.9);
+      group.add(leg2);
+      
+      const leg3 = new THREE.Mesh(legGeom, legMat);
+      leg3.position.set(-1.4, 0.7, 0.9);
+      group.add(leg3);
+      
+      const leg4 = new THREE.Mesh(legGeom, legMat);
+      leg4.position.set(1.4, 0.7, 0.9);
+      group.add(leg4);
+      
+    } else if (decor.key === 'chair_wood') {
+      // Seat
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 1.2), new THREE.MeshStandardMaterial({ color: 0x8d6e63 }));
+      seat.position.y = 0.8;
+      seat.castShadow = true;
+      group.add(seat);
+      
+      // Legs
+      const legGeom = new THREE.BoxGeometry(0.12, 0.8, 0.12);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+      
+      const leg1 = new THREE.Mesh(legGeom, legMat);
+      leg1.position.set(-0.5, 0.4, -0.5);
+      group.add(leg1);
+      
+      const leg2 = new THREE.Mesh(legGeom, legMat);
+      leg2.position.set(0.5, 0.4, -0.5);
+      group.add(leg2);
+      
+      const leg3 = new THREE.Mesh(legGeom, legMat);
+      leg3.position.set(-0.5, 0.4, 0.5);
+      group.add(leg3);
+      
+      const leg4 = new THREE.Mesh(legGeom, legMat);
+      leg4.position.set(0.5, 0.4, 0.5);
+      group.add(leg4);
+      
+      // Backrest
+      const back = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.0, 0.15), new THREE.MeshStandardMaterial({ color: 0x5d4037 }));
+      back.position.set(0, 1.3, -0.5);
+      group.add(back);
+      
+    } else if (decor.key === 'rug_green') {
+      // Flat carpet box
+      const rug = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.05, 3.5), new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 1.0 }));
+      rug.position.y = 0.025;
+      rug.receiveShadow = true;
+      group.add(rug);
+      
+    } else if (decor.key === 'fireplace') {
+      // Fireplace base (grey bricks)
+      const base = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.5, 1.5), new THREE.MeshStandardMaterial({ color: 0x616161 }));
+      base.position.y = 1.25;
+      base.castShadow = true;
+      group.add(base);
+      
+      // Mantle shelf
+      const shelf = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.2, 1.7), new THREE.MeshStandardMaterial({ color: 0x3e2723 }));
+      shelf.position.set(0, 2.6, 0);
+      group.add(shelf);
+      
+      // Fire pit cut-out
+      const pit = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+      pit.position.set(0, 0.6, 0.2);
+      group.add(pit);
+      
+      // Glowing embers
+      const coal = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.8), new THREE.MeshBasicMaterial({ color: 0xff3d00 })); // orange fire
+      coal.position.set(0, 0.2, 0.2);
+      group.add(coal);
+      
+    } else if (decor.key === 'tv_set') {
+      // TV cabinet (wooden box)
+      const cabinet = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x5d4037 }));
+      cabinet.position.y = 0.6;
+      cabinet.castShadow = true;
+      group.add(cabinet);
+      
+      // Screen frame (black bezel)
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.0, 0.1), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 }));
+      screen.position.set(0, 0.6, 0.56);
+      group.add(screen);
+      
+      // Antenna
+      const ant = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.8, 0.05), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+      ant.position.set(0.4, 1.6, 0);
+      ant.rotation.z = 0.5;
+      group.add(ant);
+      
+      const ant2 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.8, 0.05), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+      ant2.position.set(-0.4, 1.6, 0);
+      ant2.rotation.z = -0.5;
+      group.add(ant2);
+    }
+    
+    // Setup shadow casting for all children recursively
+    group.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        child.userData = group.userData; // ensure clicks propagate the userData to top-level key
+      }
+    });
+    
+    houseInteriorGroup.add(group);
+    active3DInteriorDecorations.push(group);
+  });
+}
+
+function enterHouseInterior() {
+  if (currentViewMode === 'interior') return;
+  currentViewMode = 'interior';
+  
+  AudioEngine.playSFX('click');
+  
+  // Transition visibility
+  farmWorldGroup.visible = false;
+  houseInteriorGroup.visible = true;
+  
+  // Adjust camera to view room
+  camera.position.set(0, 15, 18);
+  controls.target.set(0, 1.5, 0);
+  controls.minDistance = 5;
+  controls.maxDistance = 35;
+  controls.update();
+  
+  // Toggle HUDs
+  document.getElementById('interior-hud').style.display = 'flex';
+  
+  // Build interior room 3D meshes
+  createHouseInterior();
+  renderAll();
+}
+
+function exitHouseInterior() {
+  if (currentViewMode === 'farm') return;
+  currentViewMode = 'farm';
+  
+  AudioEngine.playSFX('click');
+  
+  // Transition visibility
+  farmWorldGroup.visible = true;
+  houseInteriorGroup.visible = false;
+  
+  // Restore camera settings
+  camera.position.set(0, 36, 46);
+  controls.target.set(0, 0, 5);
+  controls.minDistance = 15;
+  controls.maxDistance = 80;
+  controls.update();
+  
+  // Toggle HUDs
+  document.getElementById('interior-hud').style.display = 'none';
+  
+  // Reset drop downs
+  document.getElementById('interior-brush-select').value = 'none';
+  const badge = document.getElementById('interior-mode-active-badge');
+  if (badge) {
+    badge.textContent = 'OFF';
+    badge.style.background = '#795548';
+  }
+  renderAll();
+}
+
+function sleepInHouse() {
+  if (!state) return;
+  
+  AudioEngine.playSFX('click');
+  
+  // Show sleeping black screen overlay
+  const overlay = document.getElementById('sleep-overlay');
+  overlay.style.display = 'flex';
+  setTimeout(() => { overlay.style.opacity = '1'; }, 50);
+  
+  // Fast forward crops
+  state.plots.forEach(plot => {
+    if (plot.state === 'growing') {
+      const crop = cropMeta[plot.cropType];
+      if (crop) {
+        plot.progress = Math.min(plot.progress + 60, 100);
+        if (plot.progress >= 100) {
+          plot.state = 'ready';
+          plot.progress = 100;
+        }
+      }
+    }
+  });
+  
+  // Increment child growth by +10% passively as a sleeping reward!
+  if (state.family.isMarried && state.family.childStage !== "none" && state.family.childStage !== "adult") {
+    state.family.childGrowthProgress = Math.min((state.family.childGrowthProgress || 0) + 10, 100);
+    // Age checks inside sleep if child grows up
+    if (state.family.childGrowthProgress >= 100) {
+      state.family.childGrowthProgress = 0;
+      if (state.family.childStage === "infant") {
+        state.family.childStage = "student";
+        state.family.childSchoolGrade = 1;
+        state.family.childAge = 7;
+      } else if (state.family.childStage === "student") {
+        if (state.family.childSchoolGrade < 6) {
+          state.family.childSchoolGrade++;
+          state.family.childAge++;
+        } else {
+          state.family.childStage = "teenager";
+          state.family.assignedTask = "idle";
+          state.family.childAge = 13;
+        }
+      } else if (state.family.childStage === "teenager") {
+        state.family.childStage = "adult";
+        state.family.assignedTask = "idle";
+        state.family.childAge = 18;
+      }
+    }
+  }
+  
+  // Save database
+  usersDB[currentUser] = state;
+  saveUsersDB();
+  
+  // Wake up after 2.5 seconds
+  setTimeout(() => {
+    overlay.style.opacity = '0';
+    setTimeout(() => { 
+      overlay.style.display = 'none'; 
+      renderAll();
+      AudioEngine.playSFX('correct');
+      alert("🌅 อรุณสวัสดิ์! คุณได้นอนหลับพักผ่อนอย่างเต็มอิ่ม ผลผลิตในฟาร์มและทายาทได้รับการเร่งการเจริญเติบโตแล้ว!");
+    }, 1500);
+  }, 2500);
+}
+
+function placeFurniture(furnitureKey, x, z) {
+  if (!state || !state.family) return;
+  const item = interiorMeta[furnitureKey];
+  if (!item) return;
+  
+  if (state.coins < item.cost) {
+    AudioEngine.playSFX('incorrect');
+    alert(`เหรียญทองของคุณไม่เพียงพอ! (ต้องใช้ 🪙${item.cost})`);
+    return;
+  }
+  
+  // Check if position is already occupied
+  if (!state.family.interiorDecorations) state.family.interiorDecorations = [];
+  const occupied = state.family.interiorDecorations.find(d => d.x === x && d.z === z);
+  if (occupied) {
+    alert("ตำแหน่งนี้มีเฟอร์นิเจอร์อื่นวางอยู่แล้ว!");
+    return;
+  }
+  
+  state.coins -= item.cost;
+  state.family.interiorDecorations.push({ key: furnitureKey, x, z });
+  
+  usersDB[currentUser] = state;
+  saveUsersDB();
+  renderAll();
+  AudioEngine.playSFX('correct');
+  
+  // Rebuild interior meshes
+  createHouseInterior();
+}
+
+function removeFurniture(x, z) {
+  if (!state || !state.family || !state.family.interiorDecorations) return;
+  const idx = state.family.interiorDecorations.findIndex(d => d.x === x && d.z === z);
+  if (idx !== -1) {
+    const decor = state.family.interiorDecorations[idx];
+    const item = interiorMeta[decor.key];
+    const refund = item ? Math.floor(item.cost / 2) : 0;
+    
+    state.coins += refund;
+    state.family.interiorDecorations.splice(idx, 1);
+    
+    usersDB[currentUser] = state;
+    saveUsersDB();
+    renderAll();
+    AudioEngine.playSFX('harvest');
+    
+    createHouseInterior();
+    alert(`🧹 ถอนเฟอร์นิเจอร์เรียบร้อย ขายคืนได้ 🪙${refund} เหรียญทอง`);
+  }
+}
+
+function expandFarm() {
+  if (!state || !state.family) return;
+  if (state.family.farmExpansionLevel >= 1) {
+    alert("คุณได้ทำการขยายพื้นที่ฟาร์มไปแล้ว!");
+    return;
+  }
+  
+  if (state.coins < 1000) {
+    AudioEngine.playSFX('incorrect');
+    alert("คุณมีเหรียญทองไม่เพียงพอสำหรับการขยายฟาร์ม! (ต้องการใช้ 🪙1,000)");
+    return;
+  }
+  
+  state.coins -= 1000;
+  state.family.farmExpansionLevel = 1;
+  
+  // Add 6 new plots (starts locked)
+  for (let id = 9; id < 15; id++) {
+    state.plots.push({
+      id: id,
+      isLocked: true,
+      lockCost: 150 + (id - 9) * 100, // starts at 150 coins, then 250, 350, 450, etc.
+      state: 'empty',
+      cropType: null,
+      progress: 0,
+      isWatered: false
+    });
+  }
+  
+  usersDB[currentUser] = state;
+  saveUsersDB();
+  renderAll();
+  AudioEngine.playSFX('correct');
+  
+  alert("🎉 ยินดีด้วย! ฟาร์มของคุณได้รับการขยายพื้นที่เรียบร้อยแล้ว เพิ่มแปลงผักใหม่ 6 แปลงทางด้านขวาของฟาร์ม! 🚜");
 }
 
 // Compatibility dummy/hooks for legacy code
