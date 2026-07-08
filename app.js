@@ -40,6 +40,50 @@ const outfitMeta = {
   dark: { name: 'Midnight Ranger Coat ⚫', cost: 200, color: 0x212121, pantsColor: 0x000000, hatColor: 0x757575, emoji: '⚫' }
 };
 
+// Partners metadata (for direct marriage shop and buffs)
+const partnerMeta = {
+  sam: {
+    name: "Sam the Seed Seller (แซม พ่อค้าเมล็ดพันธุ์) 🌾",
+    desc: "บัฟพิเศษ: ช่วยให้พืชผักเติบโตเร็วขึ้น 30% (Crops grow 30% faster!)",
+    cost: 400,
+    buff: "grow_speed",
+    buffValue: 0.3,
+    emoji: "🌾"
+  },
+  lana: {
+    name: "Lana the Lumberjack (ลาน่า ช่างตัดไม้) 🪓",
+    desc: "บัฟพิเศษ: ได้รับค่า XP เพิ่มขึ้น +25% จากทุกกิจกรรม (Gain +25% XP!)",
+    cost: 350,
+    buff: "xp_bonus",
+    buffValue: 0.25,
+    emoji: "🪓"
+  },
+  fiona: {
+    name: "Fiona the Farmer (ฟิโอน่า เพื่อนชาวสวน) 👩‍🌾",
+    desc: "บัฟพิเศษ: ได้รับเหรียญทองจากการขายผลผลิตเพิ่มขึ้น +20% (Gain +20% Coins from sales!)",
+    cost: 500,
+    buff: "coin_bonus",
+    buffValue: 0.2,
+    emoji: "👩‍🌾"
+  },
+  harvey: {
+    name: "Harvey the Doctor (หมอฮาร์วีย์) 👨‍⚕️",
+    desc: "บัฟพิเศษ: พืชโตเร็วขึ้น 15% และได้รับ XP +15% (Crops grow 15% faster & +15% XP!)",
+    cost: 450,
+    buff: "hybrid_grow_xp",
+    buffValue: 0.15,
+    emoji: "👨‍⚕️"
+  },
+  abigail: {
+    name: "Abigail the Musician (อบิเกล นักดนตรี) 🎸",
+    desc: "บัฟพิเศษ: ได้รับเหรียญทองเพิ่มขึ้น +15% และ XP +15% (+15% Coins & +15% XP!)",
+    cost: 480,
+    buff: "hybrid_coin_xp",
+    buffValue: 0.15,
+    emoji: "🎸"
+  }
+};
+
 // Active quiz tracking
 let activeQuiz = {
   question: null,
@@ -174,19 +218,14 @@ const els = {
   btnTabStudent: document.getElementById('btn-tab-student'),
   btnTabParent: document.getElementById('btn-tab-parent'),
   
-  // Family & Romance Tab Elements
+  // Family Tab Elements
   familyView: document.getElementById('family-view'),
   romanceSetupPanel: document.getElementById('romance-setup-panel'),
-  partnerSelect: document.getElementById('partner-select'),
-  btnStartRomance: document.getElementById('btn-start-romance'),
+  partnerOptionsContainer: document.getElementById('partner-options-container'),
   romanceActivePanel: document.getElementById('romance-active-panel'),
   activePartnerName: document.getElementById('active-partner-name'),
   relationshipStatus: document.getElementById('relationship-status'),
-  romancePtsText: document.getElementById('romance-pts-text'),
-  romanceProgressBar: document.getElementById('romance-progress-bar'),
-  btnFamilyChat: document.getElementById('btn-family-chat'),
-  btnFamilyGift: document.getElementById('btn-family-gift'),
-  btnFamilyPropose: document.getElementById('btn-family-propose'),
+  partnerBuffDesc: document.getElementById('partner-buff-desc'),
   familyHouseName: document.getElementById('family-house-name'),
   btnUpgradeHouse: document.getElementById('btn-upgrade-house'),
   childNonePanel: document.getElementById('child-none-panel'),
@@ -196,7 +235,6 @@ const els = {
   childGradeText: document.getElementById('child-grade-text'),
   childGrowthText: document.getElementById('child-growth-text'),
   childProgressBar: document.getElementById('child-progress-bar'),
-  btnChildHomework: document.getElementById('btn-child-homework'),
   teenagerTaskPanel: document.getElementById('teenager-task-panel'),
   childTaskSelect: document.getElementById('child-task-select')
 };
@@ -708,29 +746,9 @@ function setupEventListeners() {
   els.registerPin.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleRegister(); });
 
   // Family & Romance Action Listeners
-  els.btnStartRomance.addEventListener('click', () => {
-    AudioEngine.playSFX('click');
-    startRomance();
-  });
-  els.btnFamilyChat.addEventListener('click', () => {
-    AudioEngine.playSFX('click');
-    chatWithPartner();
-  });
-  els.btnFamilyGift.addEventListener('click', () => {
-    AudioEngine.playSFX('click');
-    giveGiftToPartner();
-  });
-  els.btnFamilyPropose.addEventListener('click', () => {
-    AudioEngine.playSFX('click');
-    proposeMarriage();
-  });
   els.btnUpgradeHouse.addEventListener('click', () => {
     AudioEngine.playSFX('click');
     upgradeHouse();
-  });
-  els.btnChildHomework.addEventListener('click', () => {
-    AudioEngine.playSFX('click');
-    startChildHomework();
   });
   els.childTaskSelect.addEventListener('change', (e) => {
     AudioEngine.playSFX('click');
@@ -1430,7 +1448,14 @@ function startPlotTimer(plotId) {
   if (plotTimers[plotId]) clearInterval(plotTimers[plotId]);
 
   const crop = cropMeta[state.plots[plotId].cropType];
-  const totalSeconds = crop.growTime;
+  let totalSeconds = crop.growTime;
+  
+  if (state.family && state.family.isMarried && state.family.partnerKey) {
+    const partner = partnerMeta[state.family.partnerKey];
+    if (partner && (partner.buff === "grow_speed" || partner.buff === "hybrid_grow_xp")) {
+      totalSeconds = Math.round(totalSeconds * (1 - partner.buffValue));
+    }
+  }
   
   plotTimers[plotId] = setInterval(() => {
     if (!state || !currentUser) {
@@ -1547,7 +1572,13 @@ function sellItem(stockKey) {
       sellPrice = state.animals.sheep.productPrice;
     }
 
-    const earnings = sellPrice * count;
+    let earnings = sellPrice * count;
+    if (state.family && state.family.isMarried && state.family.partnerKey) {
+      const partner = partnerMeta[state.family.partnerKey];
+      if (partner && (partner.buff === "coin_bonus" || partner.buff === "hybrid_coin_xp")) {
+        earnings = Math.round(earnings * (1 + partner.buffValue));
+      }
+    }
     state.coins += earnings;
     state.harvestStock[stockKey] = 0;
 
@@ -1713,7 +1744,14 @@ function startDirectQuiz(subject) {
 }
 
 function addXp(amount) {
-  state.xp += amount;
+  let finalAmount = amount;
+  if (state.family && state.family.isMarried && state.family.partnerKey) {
+    const partner = partnerMeta[state.family.partnerKey];
+    if (partner && (partner.buff === "xp_bonus" || partner.buff === "hybrid_grow_xp" || partner.buff === "hybrid_coin_xp")) {
+      finalAmount = Math.round(amount * (1 + partner.buffValue));
+    }
+  }
+  state.xp += finalAmount;
   const xpNeeded = state.level * 100;
   if (state.xp >= xpNeeded) {
     state.xp -= xpNeeded;
@@ -4912,34 +4950,55 @@ function renderFamilyPanel() {
     els.currentFarmerName.textContent = currentUser + ` (${state.family.farmerAge || 18} ปี)`;
   }
 
-  // 1. Romance Section
+  // 1. Romance / Marriage Setup Section
   if (!state.family.partnerName) {
     els.romanceSetupPanel.style.display = 'block';
     els.romanceActivePanel.style.display = 'none';
+
+    // Populate partner options container dynamically
+    els.partnerOptionsContainer.innerHTML = '';
+    Object.keys(partnerMeta).forEach(partnerKey => {
+      const partner = partnerMeta[partnerKey];
+      const card = document.createElement('div');
+      card.className = 'market-card';
+      card.style.display = 'flex';
+      card.style.flexDirection = 'column';
+      card.style.background = '#fff8e1';
+      card.style.border = '2.5px solid var(--wood-dark)';
+      card.style.borderRadius = '12px';
+      card.style.padding = '12px';
+      card.style.alignItems = 'center';
+      card.style.textAlign = 'center';
+      card.style.color = 'var(--text-dark)';
+      
+      card.innerHTML = `
+        <div style="font-size: 2.2rem; margin-bottom: 5px;">${partner.emoji}</div>
+        <div style="font-weight: bold; font-size: 0.95rem; color: var(--wood-dark);">${partner.name}</div>
+        <p style="font-size: 0.75rem; margin: 4px 0 10px 0; color: #4e342e; line-height: 1.4; text-shadow: none;">${partner.desc}</p>
+        <button class="action-btn" style="width:100%; margin:0; padding:6px 12px; font-size:0.85rem; background:#ea4c89; border-color:#d0356c; box-shadow: 0 4px 0 #ad2d59;" data-partner="${partnerKey}">
+          💍 แต่งงานสร้างครอบครัว (🪙 ${partner.cost})
+        </button>
+      `;
+      
+      const buyBtn = card.querySelector('button');
+      if (state.coins < partner.cost) buyBtn.disabled = true;
+      
+      buyBtn.addEventListener('click', () => {
+        marryPartnerDirect(partnerKey);
+      });
+      
+      els.partnerOptionsContainer.appendChild(card);
+    });
   } else {
     els.romanceSetupPanel.style.display = 'none';
     els.romanceActivePanel.style.display = 'block';
     
     els.activePartnerName.textContent = state.family.partnerName;
+    els.relationshipStatus.textContent = "คู่ชีวิต (Married) 💍";
     
-    // Status text
-    let statusText = "คบหากันอยู่ (Dating) 💖";
-    if (state.family.isMarried) {
-      statusText = "คู่ชีวิต (Married) 💍";
-    }
-    els.relationshipStatus.textContent = statusText;
-    
-    // Romance points
-    const romancePts = state.family.partnerRomance || 0;
-    els.romancePtsText.textContent = `${romancePts}/100`;
-    els.romanceProgressBar.style.width = `${romancePts}%`;
-    
-    // Propose button shows only if points are 100 and not married
-    if (romancePts >= 100 && !state.family.isMarried) {
-      els.btnFamilyPropose.style.display = 'block';
-    } else {
-      els.btnFamilyPropose.style.display = 'none';
-    }
+    const partnerKey = state.family.partnerKey || 'sam';
+    const partner = partnerMeta[partnerKey] || partnerMeta.sam;
+    els.partnerBuffDesc.textContent = partner.desc + " (ช่วยงานสวนอยู่)";
   }
 
   // 2. House Section
@@ -4979,16 +5038,14 @@ function renderFamilyPanel() {
     let emoji = "👶";
     
     // Default hiding
-    els.btnChildHomework.style.display = 'none';
     els.teenagerTaskPanel.style.display = 'none';
     
     if (state.family.childStage === "infant") {
       emoji = "👶";
-      stageText = `ทารกวัยแบเบาะ (Infant) - อายุ ${state.family.childAge || 0} ปี`;
+      stageText = `ทารกวัยแบเบาะ (Infant) - อายุ ${state.family.childAge || 1} ปี`;
     } else if (state.family.childStage === "student") {
       emoji = "👦";
       stageText = `วัยนักเรียน (Student - Grade ${state.family.childSchoolGrade || 1}) - อายุ ${state.family.childAge || 7} ปี`;
-      els.btnChildHomework.style.display = 'block';
     } else if (state.family.childStage === "teenager") {
       emoji = "🧑";
       stageText = `วัยรุ่นช่วยงาน (Teenager) - อายุ ${state.family.childAge || 13} ปี`;
@@ -5008,97 +5065,20 @@ function renderFamilyPanel() {
   }
 }
 
-function startRomance() {
+function marryPartnerDirect(partnerKey) {
   if (!state || !state.family) return;
-  const selectEl = els.partnerSelect;
-  state.family.partnerName = selectEl.value;
-  state.family.partnerRomance = 10; // Start at 10 pts
-  state.family.isMarried = false;
-  state.family.childStage = "none";
-  state.family.childAge = 0;
-  state.family.childGrowthProgress = 0;
+  const partner = partnerMeta[partnerKey];
+  if (!partner) return;
   
-  usersDB[currentUser] = state;
-  saveUsersDB();
-  renderAll();
-  AudioEngine.playSFX('correct');
-  
-  alert(`💖 คุณเริ่มจีบ ${state.family.partnerName} แล้ว! พูดคุยและมอบของขวัญเพื่อเพิ่มค่าความรักให้ครบ 100 แต้ม เพื่อขอแต่งงาน!`);
-}
-
-function chatWithPartner() {
-  if (!state || !state.family || !state.family.partnerName) return;
-  
-  // Increase romance
-  const oldRomance = state.family.partnerRomance || 0;
-  state.family.partnerRomance = Math.min(oldRomance + 5, 100);
-  
-  usersDB[currentUser] = state;
-  saveUsersDB();
-  renderAll();
-  AudioEngine.playSFX('correct');
-  
-  // Cute NPC dialogue
-  let reply = "ยินดีที่ได้คุยกับเธอนะ!";
-  if (state.family.partnerName.includes("Sam")) {
-    const dialogs = [
-      "วันนี้เธอน่ารักจัง! ฉันมีเมล็ดพันธุ์ดีๆ มานำเสนอเธอเสมอเลยนะ 🌾",
-      "การปลูกผักในแปลงต้องใส่ใจ เช่นเดียวกับการดูแลคนพิเศษนะ! 😉",
-      "มีเมล็ดพันธุ์พืชผักอะไรที่เธอต้องการไหม? ฉันเตรียมไว้ให้เธอเพียบเลย!"
-    ];
-    reply = dialogs[Math.floor(Math.random() * dialogs.length)];
-  } else if (state.family.partnerName.includes("Lana")) {
-    const dialogs = [
-      "ฮึบ! ตัดไม้เหนื่อยๆ แต่พอได้ยินเสียงของเธอแล้วหายเหนื่อยเป็นปลิดทิ้งเลย 🪓",
-      "อยากสร้างบ้านใหม่หลังใหญ่กว่าเดิมไหม? ปรึกษาฉันได้เสมอนะ!",
-      "อากาศวันนี้สดชื่นมากเลยนะ เหมาะกับการทำฟาร์มร่วมกันมากๆ"
-    ];
-    reply = dialogs[Math.floor(Math.random() * dialogs.length)];
-  } else if (state.family.partnerName.includes("Fiona")) {
-    const dialogs = [
-      "ทำฟาร์มคนเดียวมันเหนื่อย แต่ถ้าเราแชร์ปัญหาร่วมกัน มันก็น่าสนุกดีนะ 👩‍🌾",
-      "วันนี้ผลผลิตของคุณเป็นอย่างไรบ้าง? มะเขือเทศฉันกำลังลูกโตน่ากินเชียว!",
-      "ดีใจจังเลยที่เราเป็นเพื่อนบ้านชาวสวนที่คอยสนับสนุนกันตลอด"
-    ];
-    reply = dialogs[Math.floor(Math.random() * dialogs.length)];
-  }
-  
-  alert(`💬 ${state.family.partnerName}: "${reply}" \n\n(แต้มความรักเพิ่มขึ้น +5! ปัจจุบัน: ${state.family.partnerRomance}/100)`);
-}
-
-function giveGiftToPartner() {
-  if (!state || !state.family || !state.family.partnerName) return;
-  if (state.coins < 20) {
+  if (state.coins < partner.cost) {
     AudioEngine.playSFX('incorrect');
-    alert("คุณมีเหรียญทองไม่เพียงพอ! (ต้องใช้ 🪙20)");
+    alert("คุณมีเหรียญทองไม่เพียงพอสำหรับการแต่งงาน!");
     return;
   }
   
-  state.coins -= 20;
-  const oldRomance = state.family.partnerRomance || 0;
-  state.family.partnerRomance = Math.min(oldRomance + 15, 100);
-  
-  usersDB[currentUser] = state;
-  saveUsersDB();
-  renderAll();
-  AudioEngine.playSFX('correct');
-  
-  alert(`🎁 คุณส่งมอบกล่องของขวัญแสนสวยงามให้ ${state.family.partnerName}! \n\n(แต้มความรักเพิ่มขึ้น +15! ปัจจุบัน: ${state.family.partnerRomance}/100)`);
-}
-
-function proposeMarriage() {
-  if (!state || !state.family || !state.family.partnerName) return;
-  if (state.family.partnerRomance < 100) {
-    alert("คุณต้องการแต้มความรัก 100 แต้มก่อนแต่งงาน!");
-    return;
-  }
-  if (state.coins < 500) {
-    AudioEngine.playSFX('incorrect');
-    alert("คุณต้องการแหวนแต่งงานราคา 🪙500 เหรียญทอง!");
-    return;
-  }
-  
-  state.coins -= 500;
+  state.coins -= partner.cost;
+  state.family.partnerName = partner.name;
+  state.family.partnerKey = partnerKey;
   state.family.isMarried = true;
   state.family.houseLevel = 2; // Upgraded automatically to Level 2
   state.family.childStage = "infant";
@@ -5110,8 +5090,8 @@ function proposeMarriage() {
   renderAll();
   AudioEngine.playSFX('correct');
   
-  alert(`🎉💍 ยินดีด้วยอย่างยิ่ง! คุณได้ขอแต่งงานกับ ${state.family.partnerName} สำเร็จแล้ว!\n\n` +
-        `พวกคุณย้ายเข้าอยู่ด้วยกันและได้อัปเกรดบ้านเป็น Town House (เลเวล 2) เพื่อต้อนรับทารกน้อยวัยแบเบาะ (Infant) ทายาทคนแรกของฟาร์ม! 👶`);
+  alert(`🎉💍 ยินดีด้วยอย่างยิ่ง! คุณได้แต่งงานสร้างครอบครัวกับ ${partner.name} สำเร็จแล้ว!\n\n` +
+        `คู่ชีวิตของคุณย้ายเข้าอยู่ด้วยกันและมอบบัฟพิเศษให้กับฟาร์ม! และยังได้อัปเกรดบ้านเป็น Town House (เลเวล 2) เพื่อต้อนรับทารกน้อยวัยแบเบาะ (Infant) ทายาทคนแรกของฟาร์ม! 👶`);
 }
 
 function upgradeHouse() {
@@ -5145,64 +5125,6 @@ function upgradeHouse() {
   alert(`🏡 ยินดีด้วย! บ้านฟาร์มของคุณได้รับการอัปเกรดเป็นเลเวล ${state.family.houseLevel} เรียบร้อยแล้ว!`);
 }
 
-function startChildHomework() {
-  if (!state || !state.family || state.family.childStage !== 'student') return;
-  
-  const gradeLevels = ['level-kg', 'level-p1', 'level-p2', 'level-p3', 'level-p4', 'level-p5', 'level-p6'];
-  const gradeIdx = state.family.childSchoolGrade || 1;
-  const gradeKey = gradeLevels[gradeIdx] || 'level-p1';
-  
-  const subject = Math.random() > 0.5 ? 'math' : 'english';
-  const questions = questionsData[gradeKey] ? questionsData[gradeKey][subject] : questionsData['level-p1'][subject];
-  const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-  
-  activeQuiz = {
-    question: randomQuestion,
-    correctCallback: () => {
-      // Correct answer: child gains +20% growth progress
-      const oldProgress = state.family.childGrowthProgress || 0;
-      state.family.childGrowthProgress = Math.min(oldProgress + 20, 100);
-      addCoins(20);
-      addXp(20);
-      
-      let hasLeveledUp = false;
-      if (state.family.childGrowthProgress >= 100) {
-        state.family.childGrowthProgress = 0;
-        
-        if (state.family.childSchoolGrade < 6) {
-          state.family.childSchoolGrade++;
-          state.family.childAge++;
-          alert(`🎓 ทายาทของคุณสอบผ่านและขึ้นชั้นเรียนเป็น Grade ${state.family.childSchoolGrade} แล้ว!`);
-        } else {
-          state.family.childStage = "teenager";
-          state.family.assignedTask = "idle";
-          state.family.childAge = 13;
-          hasLeveledUp = true;
-        }
-      }
-      
-      usersDB[currentUser] = state;
-      saveUsersDB();
-      renderAll();
-      
-      setTimeout(() => {
-        if (hasLeveledUp) {
-          alert("🎉 ยอดเยี่ยมมาก! ทายาทของคุณทำการบ้านเสร็จทั้งหมดและเรียนจบ ป.6 เติบโตสู่วัยรุ่น (Teenager) แล้ว! คุณสามารถมอบหมายภารกิจช่วยงานฟาร์มได้แล้ว");
-        } else {
-          alert(`📚 คุณช่วยสอนการบ้านลูกถูกต้อง! ได้รับ 🪙20 XP20 และความก้าวหน้าการเรียนรู้ลูกเพิ่มขึ้น +20% (ปัจจุบัน: ${state.family.childGrowthProgress}%)`);
-        }
-      }, 500);
-    },
-    incorrectCallback: () => {
-      alert("คำตอบยังไม่ถูกต้อง ลองช่วยทำการบ้านวิชานี้ใหม่อีกครั้งนะ!");
-    },
-    rewardCoins: 20,
-    rewardXp: 20
-  };
-  
-  showQuizModal(`สอนการบ้านลูก: Grade ${state.family.childSchoolGrade} (${subject.toUpperCase()})`);
-}
-
 function changeChildTask(e) {
   if (!state || !state.family) return;
   state.family.assignedTask = e.target.value;
@@ -5220,7 +5142,8 @@ function tickFamilyGrowth() {
   // Increment child growth progress passively if married
   if (state.family.isMarried && state.family.childStage !== "none" && state.family.childStage !== "adult") {
     const oldProgress = state.family.childGrowthProgress || 0;
-    state.family.childGrowthProgress = Math.min(oldProgress + 5, 100);
+    // Passive growth rate: +10% per tick (every 60 seconds)
+    state.family.childGrowthProgress = Math.min(oldProgress + 10, 100);
     
     if (state.family.childGrowthProgress >= 100) {
       state.family.childGrowthProgress = 0;
@@ -5228,7 +5151,7 @@ function tickFamilyGrowth() {
         state.family.childStage = "student";
         state.family.childSchoolGrade = 1;
         state.family.childAge = 7;
-        alert("🎉 ทายาทวัยทารกเติบโตกลายเป็น วัยนักเรียน (Student - Grade 1) แล้ว! ช่วยทำการบ้านสะสมรางวัลการเรียนรู้กันเถอะ!");
+        alert("🎉 ทายาทวัยทารกเติบโตกลายเป็น วัยนักเรียน (Student - Grade 1) แล้ว! น้องกำลังศึกษาเล่าเรียนอย่างขยันขันแข็ง!");
       } else if (state.family.childStage === "student") {
         if (state.family.childSchoolGrade < 6) {
           state.family.childSchoolGrade++;
@@ -5238,7 +5161,7 @@ function tickFamilyGrowth() {
           state.family.childStage = "teenager";
           state.family.assignedTask = "idle";
           state.family.childAge = 13;
-          alert("🎉 ทายาทของคุณทำการเรียนจบประถมและเติบโตสู่วัยรุ่น (Teenager) แล้ว! คุณสามารถมอบหมายภารกิจช่วยงานฟาร์มในแปลงดินได้แล้ว");
+          alert("🎉 ทายาทของคุณทำการเรียนจบระดับประถมและเติบโตสู่วัยรุ่น (Teenager) แล้ว! คุณสามารถมอบหมายภารกิจช่วยงานฟาร์มในแปลงดินได้แล้ว");
         }
       } else if (state.family.childStage === "teenager") {
         state.family.childStage = "adult";
