@@ -3232,13 +3232,13 @@ function build3DWorld() {
   const w4 = new THREE.Mesh(wheelGeo, wheelMat); w4.position.set(0.2, 0.8, -1.15); w4.castShadow = true; truck3DMesh.add(w4);
 
   // 2. CONNECTING POLES (คานลากไม้)
-  const poleL = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.15), wallMat);
-  poleL.position.set(1.4, 0.8, 0.6);
-  truck3DMesh.add(poleL);
+  const carriagePoleL = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.15), wallMat);
+  carriagePoleL.position.set(1.4, 0.8, 0.6);
+  truck3DMesh.add(carriagePoleL);
   
-  const poleR = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.15), wallMat);
-  poleR.position.set(1.4, 0.8, -0.6);
-  truck3DMesh.add(poleR);
+  const carriagePoleR = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.15), wallMat);
+  carriagePoleR.position.set(1.4, 0.8, -0.6);
+  truck3DMesh.add(carriagePoleR);
 
   // 3. THE HORSE (ตัวม้าลากเกวียน)
   const horseGroup = new THREE.Group();
