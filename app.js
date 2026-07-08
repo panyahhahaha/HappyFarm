@@ -225,6 +225,16 @@ function loadUsersDB() {
   if (db) {
     try {
       usersDB = JSON.parse(db);
+      let migrated = false;
+      Object.keys(usersDB).forEach(username => {
+        if (usersDB[username] && (usersDB[username].pin === undefined || usersDB[username].pin === null || usersDB[username].pin === "")) {
+          usersDB[username].pin = '0000';
+          migrated = true;
+        }
+      });
+      if (migrated) {
+        saveUsersDB();
+      }
     } catch (e) {
       console.error("Could not load users DB", e);
       usersDB = {};
@@ -1222,7 +1232,6 @@ function renderMarket() {
       els.marketItemsGrid.appendChild(card);
     });
   }
-}
 }
 
 // Unlock plots
