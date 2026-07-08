@@ -72,6 +72,7 @@
         <div class="form-group">
           <label for="login-pin">4-Digit PIN Passcode:</label>
           <input type="password" id="login-pin" class="form-input" placeholder="••••" maxlength="4" inputmode="numeric">
+          <p style="font-size:0.75rem; color:#d84315; margin: 4px 0 0 0; text-align:left;">* สำหรับบัญชีเดิมที่ไม่มีรหัสผ่าน สามารถเข้าใช้งานด้วยรหัส <strong>0000</strong></p>
         </div>
         <button id="btn-login" class="action-btn auth-btn">Enter Farm! 🚜</button>
         <p style="text-align:center; margin-top:16px; font-size:0.9rem;">
@@ -169,6 +170,9 @@
       </button>
       <button class="tab-btn" id="tab-settings" data-target="settings-view">
         <span>👨‍🌾</span> Farmer Profile
+      </button>
+      <button class="tab-btn" id="tab-designer" data-target="designer-view">
+        <span>📊</span> Designer Hub
       </button>
     </nav>
 
@@ -494,6 +498,81 @@
           <p><strong>2. Water Crops:</strong> Click on a growing crop. Solve a fun Math or English question to water it and speed up growth!</p>
           <p><strong>3. Harvest & Sell:</strong> Click on fully grown crops to harvest. Sell harvested crops in the Harvest Stock sidebar to earn gold coins!</p>
           <p><strong>4. Learning Barn:</strong> Visit the Learning Barn to answer quizzes and earn direct coin rewards.</p>
+        </div>
+    </section>
+
+    <!-- 4.5 Designer Weekly Analytics Panel -->
+    <section class="view-panel" id="designer-view">
+      <div class="settings-panel" style="max-width: 1000px; margin: 0 auto; background: var(--wood-light); border: 4px solid var(--wood-dark); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-wood); padding: 25px; color: var(--white);">
+        <h2 class="panel-title" style="color: var(--gold); text-shadow: 0 2px 0 rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px;">
+          <span>📊</span> แผงข้อมูลผู้ออกแบบเกม (Game Designer Analytics)
+        </h2>
+        <p style="font-size: 0.9rem; margin-bottom: 20px; color: #fffdf5; opacity: 0.9;">
+          ระบบรายงานสถิติติดตามการเล่นของเด็กๆ ในระบบจำแนกรายสัปดาห์ สำหรับวิเคราะห์ความก้าวหน้า ปริมาณการใช้งาน และการตอบโจทย์
+        </p>
+
+        <!-- Stats Overview Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px;">
+          <div style="background: rgba(255,255,255,0.15); border: 2.5px solid var(--wood-dark); border-radius: 12px; padding: 15px; text-align: center;">
+            <div style="font-size: 1.8rem;">👥</div>
+            <div style="font-weight: bold; margin-top: 5px;">เด็กทั้งหมดในระบบ</div>
+            <div id="designer-total-children" style="font-size: 1.5rem; font-weight: 900; color: var(--gold); margin-top: 5px;">0 คน</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.15); border: 2.5px solid var(--wood-dark); border-radius: 12px; padding: 15px; text-align: center;">
+            <div style="font-size: 1.8rem;">⏱️</div>
+            <div style="font-weight: bold; margin-top: 5px;">เวลาเล่นสะสมทั้งหมด</div>
+            <div id="designer-total-playtime" style="font-size: 1.5rem; font-weight: 900; color: var(--gold); margin-top: 5px;">0 นาที</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.15); border: 2.5px solid var(--wood-dark); border-radius: 12px; padding: 15px; text-align: center;">
+            <div style="font-size: 1.8rem;">🪙</div>
+            <div style="font-weight: bold; margin-top: 5px;">เหรียญทองสะสมทั้งหมด</div>
+            <div id="designer-total-coins" style="font-size: 1.5rem; font-weight: 900; color: var(--gold); margin-top: 5px;">0 🪙</div>
+          </div>
+        </div>
+
+        <!-- Weekly Summary Table -->
+        <div style="background: #fffdf5; border: 3px solid var(--wood-dark); border-radius: 12px; padding: 20px; color: var(--text-dark); margin-bottom: 25px;">
+          <h3 style="margin-top: 0; color: var(--wood-dark); border-bottom: 2px dashed #bcaaa4; padding-bottom: 8px;">📅 รายงานสถิติรายสัปดาห์ (Weekly Stats Summary)</h3>
+          <div class="table-container" style="margin-top: 15px;">
+            <table class="logs-table" style="width: 100%; text-align: center; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #e0f2f1; color: #004d40;">
+                  <th style="padding: 10px; border-bottom: 2px solid #80cbc4;">สัปดาห์ (Sunday - Saturday)</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #80cbc4;">เด็กที่เข้าเล่น (คน)</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #80cbc4;">เวลาเล่นรวม</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #80cbc4;">เหรียญที่ได้รับรวม</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #80cbc4;">XP ที่ได้รับรวม</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #80cbc4;">จำนวนเซสชัน</th>
+                </tr>
+              </thead>
+              <tbody id="designer-weekly-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Child Detailed List -->
+        <div style="background: #fffdf5; border: 3px solid var(--wood-dark); border-radius: 12px; padding: 20px; color: var(--text-dark);">
+          <h3 style="margin-top: 0; color: var(--wood-dark); border-bottom: 2px dashed #bcaaa4; padding-bottom: 8px;">👧 รายชื่อเด็กและประสิทธิภาพการทำโจทย์ (Individual Performance)</h3>
+          <div class="table-container" style="margin-top: 15px;">
+            <table class="logs-table" style="width: 100%; text-align: center; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #efebe9; color: #4e342e;">
+                  <th style="padding: 10px; border-bottom: 2px solid #bcaaa4;">ชื่อน้อง</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #bcaaa4;">เลเวล</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #bcaaa4;">เหรียญปัจจุบัน</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #bcaaa4;">XP ปัจจุบัน</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #bcaaa4;">รหัสผ่าน (PIN)</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #bcaaa4;">สถิติวันสะสมการเรียน</th>
+                  <th style="padding: 10px; border-bottom: 2px solid #bcaaa4;">จุดอ่อนที่ควรปรับปรุง</th>
+                </tr>
+              </thead>
+              <tbody id="designer-children-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>

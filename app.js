@@ -647,6 +647,9 @@ function setupEventListeners() {
       if (target === 'settings-view') {
         renderFarmerProfile();
       }
+      if (target === 'designer-view') {
+        renderDesignerAnalytics();
+      }
       if (target === 'farm-view') {
         resizeCanvas();
       }
@@ -869,6 +872,154 @@ function renderFarmerProfile() {
 
   // Render earned medals showcase
   renderBadges();
+}
+
+function renderDesignerAnalytics() {
+  if (!usersDB) return;
+  
+  const weeklyTbody = document.getElementById('designer-weekly-tbody');
+  const childrenTbody = document.getElementById('designer-children-tbody');
+  if (!weeklyTbody || !childrenTbody) return;
+
+  weeklyTbody.innerHTML = '';
+  childrenTbody.innerHTML = '';
+
+  const usernames = Object.keys(usersDB);
+  
+  let grandTotalPlaytimeSec = 0;
+  let grandTotalCoins = 0;
+  usernames.forEach(name => {
+    const u = usersDB[name];
+    if (u) {
+      grandTotalCoins += (u.coins || 0);
+      if (u.logs) {
+        u.logs.forEach(log => {
+          grandTotalPlaytimeSec += (log.duration || 0);
+        });
+      }
+    }
+  });
+
+  const totalChildrenEl = document.getElementById('designer-total-children');
+  const totalPlaytimeEl = document.getElementById('designer-total-playtime');
+  const totalCoinsEl = document.getElementById('designer-total-coins');
+  if (totalChildrenEl) totalChildrenEl.textContent = `${usernames.length} คน`;
+  if (totalPlaytimeEl) totalPlaytimeEl.textContent = `${Math.ceil(grandTotalPlaytimeSec / 60)} นาที`;
+  if (totalCoinsEl) totalCoinsEl.textContent = `${grandTotalCoins} 🪙`;
+
+  const weeklyStats = {};
+  
+  usernames.forEach(username => {
+    const user = usersDB[username];
+    if (user && user.logs) {
+      user.logs.forEach(log => {
+        const dateStr = log.date;
+        let d = new Date(dateStr);
+        if (isNaN(d.getTime())) {
+          const parts = dateStr.split(' ')[0].split('/');
+          if (parts.length === 3) {
+            let year = parseInt(parts[2]);
+            if (year > 2400) year -= 543;
+            let month = parseInt(parts[1]) - 1;
+            let day = parseInt(parts[0]);
+            d = new Date(year, month, day);
+          }
+        }
+        
+        if (isNaN(d.getTime())) return;
+        
+        const dayOfWeek = d.getDay();
+        const diff = d.getDate() - dayOfWeek;
+        const startOfWeek = new Date(d.setDate(diff));
+        startOfWeek.setHours(0,0,0,0);
+        
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23,59,59,999);
+        
+        const weekKey = startOfWeek.toLocaleDateString();
+        const weekLabel = `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
+        
+        if (!weeklyStats[weekKey]) {
+          weeklyStats[weekKey] = {
+            label: weekLabel,
+            activeUsers: new Set(),
+            playtime: 0,
+            coins: 0,
+            xp: 0,
+            sessions: 0
+          };
+        }
+        
+        weeklyStats[weekKey].activeUsers.add(username);
+        weeklyStats[weekKey].playtime += (log.duration || 0);
+        weeklyStats[weekKey].coins += (log.coinsGained || 0);
+        weeklyStats[weekKey].xp += (log.xpGained || 0);
+        weeklyStats[weekKey].sessions++;
+      });
+    }
+  });
+
+  const sortedWeeks = Object.keys(weeklyStats).sort((a,b) => new Date(b) - new Date(a));
+  
+  if (sortedWeeks.length === 0) {
+    weeklyTbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center; color:#888; padding:20px;">
+          ยังไม่มีข้อมูลประวัติการเล่นใดๆ บันทึกในสัปดาห์นี้
+        </td>
+      </tr>
+    `;
+  } else {
+    sortedWeeks.forEach(weekKey => {
+      const stat = weeklyStats[weekKey];
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>${stat.label}</strong></td>
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; color:#2e7d32; font-weight:bold;">${stat.activeUsers.size} คน</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">⏱️ ${formatPlaytime(stat.playtime)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; color:var(--gold-dark); font-weight:bold;">+${stat.coins}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; color:#00bcff; font-weight:bold;">+${stat.xp}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${stat.sessions} เซสชัน</td>
+      `;
+      weeklyTbody.appendChild(row);
+    });
+  }
+
+  usernames.forEach(name => {
+    const user = usersDB[name];
+    if (!user) return;
+    const row = document.createElement('tr');
+    
+    let weaknessText = "-";
+    if (user.quizHistory && user.quizHistory.weaknesses) {
+      const badSubjects = [];
+      Object.keys(user.quizHistory.weaknesses).forEach(subj => {
+        const stats = user.quizHistory.weaknesses[subj];
+        if (stats.incorrect > 0) {
+          badSubjects.push(`${subj} (ผิด ${stats.incorrect} ข้อ)`);
+        }
+      });
+      if (badSubjects.length > 0) {
+        weaknessText = badSubjects.join(', ');
+      } else {
+        weaknessText = "ไม่มีจุดอ่อน (ทำถูกต้องหมด!) 🎉";
+      }
+    }
+    
+    const challengeDays = user.quizHistory ? (user.quizHistory.challengeDayProgress || 0) : 0;
+    
+    row.innerHTML = `
+      <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>${name}</strong></td>
+      <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">⭐ ${user.level || 1}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; color:var(--gold-dark); font-weight:bold;">🪙 ${user.coins || 0}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; color:#00bcff; font-weight:bold;">${user.xp || 0}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><code>${user.pin || '0000'}</code></td>
+      <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">📅 ${challengeDays} / 30 วัน</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; color:#c62828; font-size:0.8rem;">${weaknessText}</td>
+    `;
+    childrenTbody.appendChild(row);
+  });
 }
 
 // General Renderers
